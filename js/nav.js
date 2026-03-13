@@ -5,15 +5,21 @@
 
 const NAV_SECTIONS = ['hero', 'overview', 'interactive', 'networks', 'faults'];
 
+let _navRafPending = false;
 window.addEventListener('scroll', () => {
-  const scrollY = window.scrollY + 80;   // offset for sticky nav height
+  if (_navRafPending) return;
+  _navRafPending = true;
+  requestAnimationFrame(() => {
+    _navRafPending = false;
+    const scrollY = window.scrollY + 80;   // offset for sticky nav height
 
-  NAV_SECTIONS.forEach(id => {
-    const section = document.getElementById(id);
-    const link    = document.querySelector(`nav a[href="#${id}"]`);
-    if (!section || !link) return;
+    NAV_SECTIONS.forEach(id => {
+      const section = document.getElementById(id);
+      const link    = document.querySelector(`nav a[href="#${id}"]`);
+      if (!section || !link) return;
 
-    const active = scrollY >= section.offsetTop && scrollY < section.offsetTop + section.offsetHeight;
-    link.classList.toggle('active', active);
+      const active = scrollY >= section.offsetTop && scrollY < section.offsetTop + section.offsetHeight;
+      link.classList.toggle('active', active);
+    });
   });
 });

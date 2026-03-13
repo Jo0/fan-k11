@@ -38,7 +38,11 @@ function resizeSim() {
   pwmCanvas.width  = pwWrap.clientWidth  - 10;
   pwmCanvas.height = pwWrap.clientHeight - 20;
 }
-window.addEventListener('resize', resizeSim);
+let _simResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_simResizeTimer);
+  _simResizeTimer = setTimeout(resizeSim, 150);
+});
 resizeSim();
 
 // ── Fan speed calculation ─────────────────────────────────────────────────────
@@ -223,8 +227,16 @@ document.getElementById('potRange').addEventListener('input', function () {
 });
 
 // ── Animation loop ────────────────────────────────────────────────────────────
+let simVisible = true;
+
+const _simObserver = new IntersectionObserver(
+  entries => { simVisible = entries[0].isIntersecting; },
+  { threshold: 0 }
+);
+_simObserver.observe(simCanvas);
+
 function simLoop() {
-  drawSim();
+  if (simVisible) drawSim();
   requestAnimationFrame(simLoop);
 }
 

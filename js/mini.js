@@ -158,15 +158,13 @@ function mBackground(mx, w, h) {
   mx.strokeStyle = '#1a3a1a';
   mx.lineWidth = 1;
   mx.strokeRect(1, 1, w - 2, h - 2);
-  // Subtle grid
+  // Subtle grid — all lines in a single path for one stroke call
   mx.strokeStyle = '#0d1f0d';
   mx.lineWidth = 0.5;
-  for (let x = 20; x < w; x += 20) {
-    mx.beginPath(); mx.moveTo(x, 0); mx.lineTo(x, h); mx.stroke();
-  }
-  for (let y = 20; y < h; y += 20) {
-    mx.beginPath(); mx.moveTo(0, y); mx.lineTo(w, y); mx.stroke();
-  }
+  mx.beginPath();
+  for (let x = 20; x < w; x += 20) { mx.moveTo(x, 0); mx.lineTo(x, h); }
+  for (let y = 20; y < h; y += 20) { mx.moveTo(0, y); mx.lineTo(w, y); }
+  mx.stroke();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -466,7 +464,12 @@ function drawAllMinis() {
   drawMiniFan();
 }
 
-// Redraw on resize so canvases don't go blurry/stretched
-window.addEventListener('resize', drawAllMinis);
+// Redraw on resize so canvases don't go blurry/stretched — debounced to avoid
+// thrashing during continuous resize drags
+let _miniResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_miniResizeTimer);
+  _miniResizeTimer = setTimeout(drawAllMinis, 150);
+});
 
 drawAllMinis();
