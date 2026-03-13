@@ -13,6 +13,7 @@ const pctx      = pwmCanvas.getContext('2d');
 
 // ── Simulation state ──────────────────────────────────────────────────────────
 let simW, simH;
+let simScale = 1, simOX = 0, simOY = 0;  // uniform scale + letterbox offsets for draw.js
 let faultKey = 'ok';             // default to normal operation
 let potV     = 0.5;              // 0..1, maps to pot position
 let simTick  = 0;                // incremented each draw frame, used for fan animation
@@ -20,10 +21,19 @@ let noiseOff = 0;                // phase offset for the noisy PWM simulation
 
 // ── Resize handler ────────────────────────────────────────────────────────────
 function resizeSim() {
-  const sidebar = document.querySelector('.sim-sidebar');
+  const sidebar  = document.querySelector('.sim-sidebar');
   const sidebarW = sidebar ? sidebar.offsetWidth : 240;
   simW = simCanvas.width  = simWrap.clientWidth - sidebarW;
   simH = simCanvas.height = simWrap.clientHeight || 560;
+
+  // Uniform scale — fit 840×560 virtual world into canvas without distortion
+  const scaleX = simW / 840;
+  const scaleY = simH / 560;
+  simScale = Math.min(scaleX, scaleY);
+  // Centre the schematic if canvas is wider or taller than the 840:560 ratio
+  simOX = (simW - 840 * simScale) / 2;
+  simOY = (simH - 560 * simScale) / 2;
+
   const pwWrap = pwmCanvas.parentElement;
   pwmCanvas.width  = pwWrap.clientWidth  - 10;
   pwmCanvas.height = pwWrap.clientHeight - 20;

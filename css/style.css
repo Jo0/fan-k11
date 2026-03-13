@@ -394,7 +394,7 @@ section {
   border: 1px solid var(--border);
   border-radius: 0.4rem;
   overflow: hidden;
-  height: 35rem;
+  height: 560px;
 }
 #simCanvas {
   width: 100%;
