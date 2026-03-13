@@ -18,9 +18,6 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
-html { scroll-behavior: smooth; }
-
 body {
   background: var(--bg);
   color: var(--text);
@@ -45,21 +42,21 @@ nav {
   z-index: 100;
   background: rgba(6,13,6,0.97);
   border-bottom: 1px solid var(--border);
-  padding: 0 32px;
+  padding: 0 2rem;
   display: flex;
   align-items: center;
   gap: 0;
-  height: 52px;
+  height: 3.2rem;
   backdrop-filter: blur(8px);
 }
 .nav-logo {
   font-family: 'Orbitron', monospace;
   font-weight: 900;
-  font-size: 13px;
+  font-size: 0.75rem;
   letter-spacing: 3px;
   color: var(--trace);
   text-shadow: 0 0 12px var(--trace);
-  margin-right: 32px;
+  margin-right: 2rem;
   white-space: nowrap;
 }
 .nav-links {
@@ -71,10 +68,10 @@ nav {
 .nav-links a {
   color: var(--dim);
   text-decoration: none;
-  font-size: 10px;
+  font-size: 0.6rem;
   letter-spacing: 2px;
-  padding: 0 16px;
-  height: 52px;
+  padding: 0 1rem;
+  height: 3.2rem;
   display: flex;
   align-items: center;
   border-bottom: 2px solid transparent;
@@ -84,17 +81,25 @@ nav {
 .nav-links a:hover { color: var(--trace); border-bottom-color: var(--trace); }
 .nav-links a.active { color: var(--trace); border-bottom-color: var(--trace); }
 .nav-dot {
-  width: 7px; height: 7px; border-radius: 50%;
+  width: 0.45rem; height: 0.45rem; border-radius: 50%;
   background: var(--trace); box-shadow: 0 0 8px var(--trace);
   animation: blink 2s infinite; margin-left: auto;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
 /* ── Layout ── */
-.container { max-width: 1600px; margin: 0 auto; padding: 0 48px; }
+.container { max-width: 1600px; margin: 0 auto; padding: 0 3rem; }
 
-/* ── Fluid type scale ── */
-html { font-size: clamp(14px, 1.1vw, 18px); }
+/* ── Fluid type scale ──────────────────────────────────────────────────────────
+   At 1920px (1080p 24"): 1.25vw = 24px — comfortable desktop reading
+   At 3440px (ultrawide 34"): 1.25vw = 43px — similar angular size to 1080p
+   Floor of 15px protects phones and small screens.
+   Everything using rem/em scales automatically from this single value.
+   ─────────────────────────────────────────────────────────────────────────── */
+html {
+  font-size: clamp(15px, 1.25vw, 48px);
+  scroll-behavior: smooth;
+}
 
 /* ── Hero ── */
 #hero {
@@ -105,119 +110,111 @@ html { font-size: clamp(14px, 1.1vw, 18px); }
 .hero-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 56px;
+  gap: 3.5rem;
   align-items: center;
 }
 .hero-eyebrow {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   letter-spacing: 4px;
   color: var(--dim);
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 .hero-title {
   font-family: 'Orbitron', monospace;
   font-weight: 900;
-  font-size: clamp(28px, 3.5vw, 56px);
+  font-size: 2.6rem;
   letter-spacing: 4px;
   color: var(--trace);
   text-shadow: 0 0 30px rgba(0,255,65,0.4);
   line-height: 1.2;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 .hero-sub {
   font-family: 'Orbitron', monospace;
-  font-size: clamp(11px, 1.1vw, 18px);
+  font-size: 0.85rem;
   letter-spacing: 3px;
   color: var(--dim);
-  margin-bottom: 28px;
+  margin-bottom: 1.75rem;
 }
 .hero-desc {
-  font-size: clamp(12px, 0.9vw, 15px);
+  font-size: 0.82rem;
   color: var(--text-dim);
   line-height: 1.8;
-  margin-bottom: 28px;
+  margin-bottom: 1.75rem;
 }
 .hero-stats {
   display: flex;
-  gap: 28px;
+  gap: 1.75rem;
 }
-.stat {
-  text-align: center;
-}
+.stat { text-align: center; }
 .stat-val {
   font-family: 'Orbitron', monospace;
-  font-size: clamp(18px, 2vw, 30px);
+  font-size: 1.5rem;
   color: var(--trace);
   display: block;
   text-shadow: 0 0 12px rgba(0,255,65,0.5);
 }
-.stat-label { font-size: clamp(8px, 0.6vw, 11px); color: var(--dim); letter-spacing: 2px; }
+.stat-label { font-size: 0.55rem; color: var(--dim); letter-spacing: 2px; }
 
-.hero-board {
-  position: relative;
-}
+.hero-board { position: relative; }
 .board-img-wrap {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 0 40px rgba(0,255,65,0.06), 0 0 80px rgba(0,0,0,0.6);
 }
-.board-img-wrap img {
-  width: 100%;
-  display: block;
-  filter: brightness(0.85) contrast(1.1);
-}
+.board-img-wrap img { width: 100%; display: block; filter: brightness(0.85) contrast(1.1); }
 .board-caption {
-  font-size: 9px;
+  font-size: 0.55rem;
   color: var(--dim);
   letter-spacing: 2px;
   text-align: center;
-  margin-top: 10px;
+  margin-top: 0.65rem;
 }
 
 /* ── Section ── */
 section {
-  padding: 72px 0;
+  padding: 4.5rem 0;
   border-bottom: 1px solid var(--border);
 }
 .section-eyebrow {
-  font-size: clamp(8px, 0.6vw, 11px);
+  font-size: 0.55rem;
   letter-spacing: 4px;
   color: var(--dim);
-  margin-bottom: 10px;
+  margin-bottom: 0.65rem;
 }
 .section-title {
   font-family: 'Orbitron', monospace;
-  font-size: clamp(16px, 1.6vw, 26px);
+  font-size: 1.2rem;
   font-weight: 700;
   letter-spacing: 3px;
   color: var(--trace);
-  margin-bottom: 6px;
+  margin-bottom: 0.4rem;
 }
 .section-rule {
-  width: 48px; height: 1px;
+  width: 3rem; height: 1px;
   background: var(--trace);
   box-shadow: 0 0 8px var(--trace);
-  margin-bottom: 32px;
+  margin-bottom: 2rem;
 }
 .section-intro {
-  font-size: clamp(12px, 0.85vw, 15px);
+  font-size: 0.8rem;
   color: var(--text-dim);
   line-height: 1.9;
-  max-width: 860px;
-  margin-bottom: 48px;
+  max-width: 52rem;
+  margin-bottom: 3rem;
 }
 
 /* ── Network cards ── */
 .networks {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  gap: 1.5rem;
 }
 .net-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0.4rem;
   overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -226,41 +223,41 @@ section {
   box-shadow: 0 0 20px rgba(0,255,65,0.05);
 }
 .net-card-header {
-  padding: 16px 20px 14px;
+  padding: 1rem 1.25rem 0.9rem;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.75rem;
 }
 .net-icon {
-  width: 32px; height: 32px; border-radius: 4px;
+  width: 2rem; height: 2rem; border-radius: 0.25rem;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px; flex-shrink: 0;
+  font-size: 1rem; flex-shrink: 0;
 }
 .net-card-title {
   font-family: 'Orbitron', monospace;
-  font-size: clamp(10px, 0.75vw, 13px);
+  font-size: 0.7rem;
   letter-spacing: 2px;
   color: var(--label);
 }
-.net-card-sub { font-size: clamp(8px, 0.6vw, 10px); color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
-.net-card-body { padding: 18px 20px; }
-.net-card-body p { font-size: clamp(11px, 0.8vw, 14px); color: var(--text-dim); line-height: 1.8; margin-bottom: 12px; }
+.net-card-sub { font-size: 0.58rem; color: var(--dim); letter-spacing: 1px; margin-top: 0.15rem; }
+.net-card-body { padding: 1.1rem 1.25rem; }
+.net-card-body p { font-size: 0.75rem; color: var(--text-dim); line-height: 1.8; margin-bottom: 0.75rem; }
 .net-card-body p:last-child { margin-bottom: 0; }
 
 .comp-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 14px;
-  padding-top: 14px;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
   border-top: 1px solid var(--border);
 }
 .pill {
-  font-size: 9px;
+  font-size: 0.58rem;
   letter-spacing: 1px;
-  padding: 3px 8px;
-  border-radius: 3px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.2rem;
   border: 1px solid;
 }
 .pill-orange { color: var(--orange); border-color: rgba(255,107,0,0.4); background: rgba(255,107,0,0.06); }
@@ -272,50 +269,50 @@ section {
 .mini-diagram {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 0.25rem;
   width: 100%;
-  height: 140px;
+  height: 10rem;
   display: block;
-  margin-bottom: 14px;
+  margin-bottom: 0.9rem;
 }
 
 /* ── Fault table ── */
 .fault-section-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  margin-bottom: 48px;
+  gap: 2rem;
+  margin-bottom: 3rem;
 }
 @media (max-width: 800px) { .fault-section-grid { grid-template-columns: 1fr; } }
 
 .fault-group-title {
   font-family: 'Orbitron', monospace;
-  font-size: clamp(10px, 0.75vw, 13px);
+  font-size: 0.7rem;
   letter-spacing: 3px;
   color: var(--label);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border);
 }
 .fault-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: clamp(10px, 0.75vw, 13px);
+  font-size: 0.72rem;
 }
 .fault-table th {
   text-align: left;
-  font-size: clamp(7px, 0.55vw, 10px);
+  font-size: 0.58rem;
   letter-spacing: 2px;
   color: var(--dim);
-  padding: 0 10px 8px 0;
+  padding: 0 0.65rem 0.5rem 0;
   border-bottom: 1px solid var(--border);
 }
 .fault-table td {
-  padding: 8px 10px 8px 0;
+  padding: 0.5rem 0.65rem 0.5rem 0;
   border-bottom: 1px solid rgba(26,58,26,0.5);
   vertical-align: top;
   color: var(--text-dim);
-  font-size: clamp(10px, 0.75vw, 13px);
+  font-size: 0.72rem;
   line-height: 1.5;
 }
 .fault-table tr:last-child td { border-bottom: none; }
@@ -325,9 +322,9 @@ section {
 .fault-comp.yellow { color: var(--yellow); }
 .fault-sev {
   display: inline-block;
-  font-size: 8px;
-  padding: 2px 6px;
-  border-radius: 2px;
+  font-size: 0.55rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.15rem;
   letter-spacing: 1px;
   white-space: nowrap;
 }
@@ -336,74 +333,30 @@ section {
 .sev-warn  { background: rgba(255,221,68,0.1); border: 1px solid var(--yellow); color: var(--yellow); }
 .sev-ok    { background: rgba(0,255,65,0.06);  border: 1px solid var(--trace);  color: var(--trace); }
 
-/* ── Repair log ── */
-.repair-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 36px;
-}
-@media (max-width: 700px) { .repair-grid { grid-template-columns: 1fr; } }
-
-.finding-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 20px;
-}
-.finding-card.fault { border-color: rgba(255,107,0,0.4); background: rgba(255,107,0,0.04); }
-.finding-card.bad   { border-color: rgba(255,68,68,0.4); background: rgba(255,0,0,0.04); }
-.finding-card.ok    { border-color: rgba(0,255,65,0.3); }
-.finding-label {
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: var(--dim);
-  margin-bottom: 6px;
-}
-.finding-comp {
-  font-family: 'Orbitron', monospace;
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-.finding-comp.orange { color: var(--orange); }
-.finding-comp.red    { color: var(--red); }
-.finding-comp.green  { color: var(--trace); }
-.finding-comp.blue   { color: var(--blue); }
-.finding-detail { font-size: 11px; color: var(--text-dim); line-height: 1.7; }
-.finding-fix {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  font-size: 10px;
-  color: var(--trace);
-  letter-spacing: 1px;
-}
-
 /* ── Interactive schematic ── */
 #interactive {
-  padding: 72px 0 0;
+  padding: 4.5rem 0 0;
   border-bottom: none;
 }
 .schematic-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
   flex-wrap: wrap;
 }
 .ctrl-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
-.ctrl-label { font-size: 9px; color: var(--dim); letter-spacing: 2px; }
+.ctrl-label { font-size: 0.6rem; color: var(--dim); letter-spacing: 2px; }
 .ctrl-select {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
+  font-size: 0.65rem;
   letter-spacing: 1px;
-  padding: 5px 10px;
-  border-radius: 3px;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.2rem;
   border: 1px solid var(--border);
   background: var(--panel);
   color: var(--trace);
@@ -413,7 +366,7 @@ section {
 .ctrl-select option, .ctrl-select optgroup { background: var(--panel); color: var(--trace); }
 .ctrl-range {
   -webkit-appearance: none;
-  width: 160px;
+  width: 10rem;
   height: 4px;
   background: var(--trace-dim);
   border-radius: 2px;
@@ -421,7 +374,7 @@ section {
 }
 .ctrl-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px; height: 14px;
+  width: 0.9rem; height: 0.9rem;
   border-radius: 50%;
   background: var(--trace);
   box-shadow: 0 0 8px var(--trace);
@@ -430,18 +383,18 @@ section {
 .ctrl-range:disabled { opacity: 0.3; }
 #potVal {
   font-family: 'Orbitron', monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--trace);
-  min-width: 36px;
+  min-width: 2.25rem;
 }
 .schematic-wrap {
   display: grid;
-  grid-template-columns: 1fr 240px;
+  grid-template-columns: 1fr 15rem;
   gap: 0;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0.4rem;
   overflow: hidden;
-  height: 560px;
+  height: 35rem;
 }
 #simCanvas {
   width: 100%;
@@ -461,71 +414,71 @@ section {
 }
 .sim-pane {
   border-bottom: 1px solid var(--border);
-  padding: 12px;
+  padding: 0.75rem;
 }
 .sim-pane-title {
   font-family: 'Orbitron', monospace;
-  font-size: 7px;
+  font-size: 0.5rem;
   letter-spacing: 3px;
   color: var(--dim);
-  margin-bottom: 10px;
+  margin-bottom: 0.65rem;
 }
-.volt-row { margin-bottom: 6px; }
-.volt-label { font-size: 8px; color: var(--label); display: flex; justify-content: space-between; margin-bottom: 2px; }
+.volt-row { margin-bottom: 0.4rem; }
+.volt-label { font-size: 0.58rem; color: var(--label); display: flex; justify-content: space-between; margin-bottom: 0.15rem; }
 .volt-bar { height: 3px; background: var(--trace-dim); border-radius: 2px; overflow: hidden; }
 .volt-fill { height: 100%; border-radius: 2px; transition: width 0.1s, background 0.15s; }
 .pwm-canvas-wrap {
   background: #030a03;
   border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 4px;
-  height: 52px;
+  border-radius: 0.2rem;
+  padding: 0.25rem;
+  height: 3.25rem;
   position: relative;
-  margin-top: 8px;
+  margin-top: 0.5rem;
 }
 .pwm-canvas-wrap span {
   position: absolute;
-  top: 2px; left: 4px;
-  font-size: 7px; color: var(--dim); letter-spacing: 1px;
+  top: 0.15rem; left: 0.25rem;
+  font-size: 0.48rem; color: var(--dim); letter-spacing: 1px;
 }
 #pwmCanvas { display: block; }
 .fault-banner {
-  border-radius: 4px;
-  padding: 8px;
-  font-size: 9px;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  font-size: 0.6rem;
   letter-spacing: 0.5px;
   line-height: 1.7;
-  margin-top: 8px;
+  margin-top: 0.5rem;
 }
 .fb-ok   { background: rgba(0,255,65,0.04);  border: 1px solid var(--trace-dim); color: var(--label); }
 .fb-warn { background: rgba(255,221,68,0.06); border: 1px solid rgba(255,221,68,0.4); color: #ffcc44; }
 .fb-err  { background: rgba(255,107,0,0.08); border: 1px solid rgba(255,107,0,0.5); color: #ffaa60; }
 .fb-dead { background: rgba(200,0,0,0.12);   border: 1px solid rgba(255,68,68,0.5); color: #ff6666; }
-.fan-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 4px; }
+.fan-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.25rem; }
 .fan-cell {
   background: #030a03;
   border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 4px 2px;
+  border-radius: 0.2rem;
+  padding: 0.25rem 0.15rem;
   text-align: center;
-  font-size: 7px;
+  font-size: 0.5rem;
   color: var(--dim);
 }
 .fan-rpm {
   font-family: 'Orbitron', monospace;
-  font-size: 8px;
+  font-size: 0.55rem;
   color: var(--trace);
   display: block;
-  margin-top: 1px;
+  margin-top: 0.06rem;
 }
-.fan-icon { font-size: 13px; display: inline-block; }
+.fan-icon { font-size: 0.85rem; display: inline-block; }
 @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
 /* ── Footer ── */
 footer {
-  padding: 40px 0;
+  padding: 2.5rem 0;
   text-align: center;
-  font-size: 10px;
+  font-size: 0.62rem;
   color: var(--dim);
   letter-spacing: 2px;
   border-top: 1px solid var(--border);
@@ -537,10 +490,11 @@ footer a:hover { color: var(--trace); }
 @media (max-width: 900px) {
   .hero-grid { grid-template-columns: 1fr; }
   .schematic-wrap { grid-template-columns: 1fr; height: auto; }
-  .sim-sidebar { height: 300px; }
+  .sim-sidebar { height: 18rem; }
 }
 @media (max-width: 600px) {
-  .container { padding: 0 16px; }
-  .hero-title { font-size: 24px; }
-  nav { padding: 0 16px; }
+  .container { padding: 0 1rem; }
+  .hero-title { font-size: 1.8rem; }
+  nav { padding: 0 1rem; }
 }
+

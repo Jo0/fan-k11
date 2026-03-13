@@ -20,7 +20,9 @@ let noiseOff = 0;                // phase offset for the noisy PWM simulation
 
 // ── Resize handler ────────────────────────────────────────────────────────────
 function resizeSim() {
-  simW = simCanvas.width  = simWrap.clientWidth - 240;
+  const sidebar = document.querySelector('.sim-sidebar');
+  const sidebarW = sidebar ? sidebar.offsetWidth : 240;
+  simW = simCanvas.width  = simWrap.clientWidth - sidebarW;
   simH = simCanvas.height = simWrap.clientHeight || 560;
   const pwWrap = pwmCanvas.parentElement;
   pwmCanvas.width  = pwWrap.clientWidth  - 10;
