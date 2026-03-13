@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UENORTH FAN-K11 — Circuit Documentation</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">FAN-K11</div>
+  <div class="nav-links">
+    <a href="#overview">OVERVIEW</a>
+    <a href="#networks">NETWORKS</a>
+    <a href="#faults">FAULT GUIDE</a>
+    <a href="#repair">REPAIR LOG</a>
+    <a href="#interactive">INTERACTIVE</a>
+  </div>
+  <div class="nav-dot"></div>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-eyebrow">CIRCUIT DOCUMENTATION · REVERSE ENGINEERED</div>
+        <div class="hero-title">UENORTH</div>
+        <div class="hero-sub">MODEL: FAN-K11</div>
+        <p class="hero-desc">
+          A 6-port 4-pin PWM fan controller powered by a single NE555 timer IC.
+          Accepts 12V via SATA or barrel jack, regulates to 5V for control logic,
+          and generates a variable-frequency PWM signal to control fan speed across
+          all six outputs simultaneously via a single potentiometer.
+        </p>
+        <div class="hero-stats">
+          <div class="stat"><span class="stat-val">6</span><span class="stat-label">FAN PORTS</span></div>
+          <div class="stat"><span class="stat-val">12V</span><span class="stat-label">INPUT</span></div>
+          <div class="stat"><span class="stat-val">~22kHz</span><span class="stat-label">PWM FREQ</span></div>
+          <div class="stat"><span class="stat-val">90kΩ</span><span class="stat-label">POT RANGE</span></div>
+        </div>
+      </div>
+      <div class="hero-board">
+        <div class="board-img-wrap">
+          <canvas id="boardThumb" width="480" height="320" style="width:100%;display:block;"></canvas>
+        </div>
+        <div class="board-caption">PCB — TOP VIEW · COMPONENT SIDE</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── OVERVIEW ── -->
+<section id="overview">
+  <div class="container">
+    <div class="section-eyebrow">SECTION 01</div>
+    <div class="section-title">CIRCUIT OVERVIEW</div>
+    <div class="section-rule"></div>
+    <p class="section-intro">
+      The FAN-K11 is a straightforward analog PWM controller built around the classic NE555 timer configured in astable mode.
+      The entire circuit can be understood as four cooperating networks: power supply, power indication, PWM generation, and fan output.
+      There are no microcontrollers, no firmware, and no digital logic — just passive components and two ICs working together.
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:48px;">
+      <div>
+        <div class="fault-group-title">HOW IT WORKS</div>
+        <p style="font-size:12px;color:var(--text-dim);line-height:1.9;margin-bottom:14px;">
+          12V enters through either the SATA connector or the barrel jack — both feed the same fused rail.
+          The 78L05 linear regulator steps 12V down to a stable 5V rail which powers the NE555 and the power indicator LED.
+        </p>
+        <p style="font-size:12px;color:var(--text-dim);line-height:1.9;margin-bottom:14px;">
+          The NE555 runs in astable mode, continuously oscillating and generating a square wave on its Pin 3 output.
+          The frequency is set by R1, R2, and C3, while the duty cycle — the ratio of on-time to off-time — is controlled
+          by the potentiometer through a diode steering network (D1, D2).
+        </p>
+        <p style="font-size:12px;color:var(--text-dim);line-height:1.9;">
+          The PWM signal from Pin 3 drives all six fan headers simultaneously. Since 4-pin PWM fans regulate their own
+          internal motor speed in response to the PWM duty cycle on Pin 4, the board needs only to provide the signal —
+          the fans themselves do the speed control.
+        </p>
+      </div>
+      <div>
+        <div class="fault-group-title">SIGNAL PATH</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:80px;text-align:right;font-size:10px;color:var(--orange);">12V IN</div>
+            <div style="flex:1;height:1px;background:var(--orange);box-shadow:0 0 4px var(--orange);"></div>
+            <div style="font-size:10px;color:var(--orange);">SATA / BARREL</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:80px;text-align:right;font-size:10px;color:var(--orange);">FUSED</div>
+            <div style="flex:1;height:1px;background:var(--orange);box-shadow:0 0 4px var(--orange);"></div>
+            <div style="font-size:10px;color:var(--orange);">F1 — 5A</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:80px;text-align:right;font-size:10px;color:var(--blue);">REGULATED</div>
+            <div style="flex:1;height:1px;background:var(--blue);box-shadow:0 0 4px var(--blue);"></div>
+            <div style="font-size:10px;color:var(--blue);">78L05 → 5V</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:80px;text-align:right;font-size:10px;color:var(--trace);">OSCILLATING</div>
+            <div style="flex:1;height:1px;background:var(--trace);box-shadow:0 0 4px var(--trace);"></div>
+            <div style="font-size:10px;color:var(--trace);">NE555 ASTABLE</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:80px;text-align:right;font-size:10px;color:var(--yellow);">DUTY CTRL</div>
+            <div style="flex:1;height:1px;background:var(--yellow);box-shadow:0 0 4px var(--yellow);"></div>
+            <div style="font-size:10px;color:var(--yellow);">POT + D1 + D2</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:80px;text-align:right;font-size:10px;color:var(--trace);">PWM OUT</div>
+            <div style="flex:1;height:1px;background:var(--trace);box-shadow:0 0 4px var(--trace);"></div>
+            <div style="font-size:10px;color:var(--trace);">PIN 3 → 6× FANS</div>
+          </div>
+        </div>
+
+        <div style="margin-top:28px;">
+          <div class="fault-group-title">COMPONENT COUNT</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
+              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--blue);">2</div>
+              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">ICs</div>
+            </div>
+            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
+              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--trace);">9</div>
+              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">PASSIVES</div>
+            </div>
+            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
+              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--yellow);">2</div>
+              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">DIODES</div>
+            </div>
+            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
+              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--orange);">6</div>
+              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">FAN PORTS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── NETWORKS ── -->
+<section id="networks">
+  <div class="container">
+    <div class="section-eyebrow">SECTION 02</div>
+    <div class="section-title">CIRCUIT NETWORKS</div>
+    <div class="section-rule"></div>
+    <p class="section-intro">
+      The circuit is divided into four functional networks. Each group of components works together to perform a specific job.
+      Understanding what each network does makes it straightforward to identify which network has failed when something goes wrong.
+    </p>
+    <div class="networks">
+
+      <!-- Power Input -->
+      <div class="net-card">
+        <div class="net-card-header">
+          <div class="net-icon" style="background:rgba(255,107,0,0.1);border:1px solid rgba(255,107,0,0.3);">⚡</div>
+          <div>
+            <div class="net-card-title">POWER INPUT</div>
+            <div class="net-card-sub">12V SUPPLY · FUSE PROTECTION</div>
+          </div>
+        </div>
+        <div class="net-card-body">
+          <canvas class="mini-diagram" id="mini-power"></canvas>
+          <p>Two independent 12V sources — SATA connector (Pin 13) and barrel jack — feed the same fused rail in parallel.
+          Only one source needs to be connected at a time. The two inputs are simply tied together before the fuse,
+          so whichever is plugged in supplies the board.</p>
+          <p>The fuse (F1, 5A) protects the entire board from overcurrent caused by a downstream short.
+          C1 (0.22µF) sits across the 12V rail at the regulator input, filtering out high-frequency
+          noise before it reaches the 78L05. All fan Pin 1 connections also draw directly from this 12V rail.</p>
+          <div class="comp-pills">
+            <span class="pill pill-orange">SATA</span>
+            <span class="pill pill-orange">BARREL</span>
+            <span class="pill pill-orange">F1 5A</span>
+            <span class="pill pill-blue">C1 0.22µF</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regulation -->
+      <div class="net-card">
+        <div class="net-card-header">
+          <div class="net-icon" style="background:rgba(68,170,255,0.1);border:1px solid rgba(68,170,255,0.3);">⬇</div>
+          <div>
+            <div class="net-card-title">VOLTAGE REGULATION</div>
+            <div class="net-card-sub">78L05 · 5V RAIL · DECOUPLING</div>
+          </div>
+        </div>
+        <div class="net-card-body">
+          <canvas class="mini-diagram" id="mini-reg"></canvas>
+          <p>The 78L05 is a fixed linear regulator that steps 12V down to a stable 5V output regardless
+          of input voltage variations. This 5V rail powers the NE555 (Pin 8, Pin 4) and the LED indicator branch.</p>
+          <p>C2 (0.33µF) is placed across the 5V output to GND, suppressing oscillation and noise on the
+          output rail — a standard requirement for linear regulators. Without it, the rail can become noisy
+          and cause erratic NE555 behaviour. The 12V fans bypass the regulator entirely and draw from the raw 12V rail.</p>
+          <div class="comp-pills">
+            <span class="pill pill-blue">78L05</span>
+            <span class="pill pill-blue">C2 0.33µF</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Power Indicator -->
+      <div class="net-card">
+        <div class="net-card-header">
+          <div class="net-icon" style="background:rgba(0,255,65,0.08);border:1px solid rgba(0,255,65,0.25);">◉</div>
+          <div>
+            <div class="net-card-title">POWER INDICATOR</div>
+            <div class="net-card-sub">R3 · LED1 · GND</div>
+          </div>
+        </div>
+        <div class="net-card-body">
+          <canvas class="mini-diagram" id="mini-led"></canvas>
+          <p>A simple series circuit: 5V Vout feeds R3 (4.7kΩ), which limits current to the LED,
+          whose cathode connects to ground. The LED lights whenever the 5V rail is present,
+          providing a visual confirmation that the regulator is running and the board is powered.</p>
+          <p>R3 sets LED current to approximately (5V − 2V forward drop) ÷ 4700Ω ≈ 0.64mA — well within
+          safe limits for a standard LED. This network is entirely independent of the PWM oscillator;
+          a fault here affects only the indicator and nothing else.</p>
+          <div class="comp-pills">
+            <span class="pill pill-green">R3 4.7kΩ</span>
+            <span class="pill pill-green">LED1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PWM Oscillator -->
+      <div class="net-card" style="grid-column: span 1;">
+        <div class="net-card-header">
+          <div class="net-icon" style="background:rgba(0,255,65,0.08);border:1px solid rgba(0,255,65,0.25);">〜</div>
+          <div>
+            <div class="net-card-title">PWM OSCILLATOR</div>
+            <div class="net-card-sub">NE555 · TIMING NETWORK · POT · DIODES</div>
+          </div>
+        </div>
+        <div class="net-card-body">
+          <canvas class="mini-diagram" id="mini-pwm"></canvas>
+          <p>The NE555 is configured in astable mode — it oscillates continuously, producing a square wave on Pin 3.
+          The frequency is approximately 1.44 ÷ ((R1 + R2) × C3) ≈ 22kHz, which is within the Intel 4-pin PWM
+          specification range of 21–28kHz.</p>
+          <p>Duty cycle is controlled by a diode steering network using D1 and D2 to separate charge and discharge paths
+          through the potentiometer. The pot is wired as a rheostat: its left leg and wiper are shorted together and
+          connect to D1's cathode. D2's anode connects to the right leg. As the pot is turned, resistance changes in
+          the timing network, shifting the duty cycle between approximately 10% and 90%.</p>
+          <p>R1 (1kΩ) connects 5V to Pin 7 and also shares its pad with D1's anode and one pad of R2 — this is the
+          key junction node. C3 (33nF) is the timing capacitor between Pin 2/6 and GND. C4 (10nF) on Pin 5 prevents
+          external noise from shifting the internal voltage comparator thresholds.</p>
+          <div class="comp-pills">
+            <span class="pill pill-green">NE555</span>
+            <span class="pill pill-green">R1 1kΩ</span>
+            <span class="pill pill-green">R2 1kΩ</span>
+            <span class="pill pill-green">C3 33nF</span>
+            <span class="pill pill-green">C4 10nF</span>
+            <span class="pill pill-yellow">D1</span>
+            <span class="pill pill-yellow">D2</span>
+            <span class="pill pill-green">RV1 90kΩ</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fan Output -->
+      <div class="net-card">
+        <div class="net-card-header">
+          <div class="net-icon" style="background:rgba(0,255,65,0.08);border:1px solid rgba(0,255,65,0.25);">💨</div>
+          <div>
+            <div class="net-card-title">FAN OUTPUT</div>
+            <div class="net-card-sub">6× 4-PIN PWM HEADERS</div>
+          </div>
+        </div>
+        <div class="net-card-body">
+          <canvas class="mini-diagram" id="mini-fan"></canvas>
+          <p>All six fan headers are wired identically in parallel: Pin 1 (12V) from the raw fused rail,
+          Pin 2 (GND) to common ground, Pin 3 (tach) left unconnected, and Pin 4 (PWM) driven by NE555 Pin 3.</p>
+          <p>Because all six headers share the same PWM signal, all fans run at the same speed simultaneously.
+          4-pin PWM fans contain their own internal speed controller — the board only needs to provide the PWM
+          signal; it does not directly switch fan power. This means the board's output stage draws almost no current
+          itself; the fans draw their 12V power directly from the main rail.</p>
+          <div class="comp-pills">
+            <span class="pill pill-green">FAN1–FAN6</span>
+            <span class="pill pill-orange">12V → PIN 1</span>
+            <span class="pill pill-green">PWM → PIN 4</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── FAULTS ── -->
+<section id="faults">
+  <div class="container">
+    <div class="section-eyebrow">SECTION 03</div>
+    <div class="section-title">FAULT GUIDE</div>
+    <div class="section-rule"></div>
+    <p class="section-intro">
+      Because the circuit is divided into distinct networks, failures produce predictable and identifiable symptoms.
+      Use the symptom you observe to narrow down which network is at fault, then check the specific components within it.
+    </p>
+
+    <!-- Symptom quick-ref -->
+    <div class="fault-group-title" style="margin-bottom:20px;">SYMPTOM QUICK REFERENCE</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:48px;">
+      <div style="padding:14px 16px;border:1px solid rgba(255,68,68,0.3);border-radius:4px;background:rgba(255,0,0,0.04);">
+        <div style="font-size:9px;letter-spacing:2px;color:#ff6666;margin-bottom:6px;">SYMPTOM</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Board completely dead — no LED, no fans</div>
+        <div style="font-size:10px;color:var(--orange);">→ Check: F1 (blown fuse) or C1 (shorted)</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid rgba(255,107,0,0.3);border-radius:4px;background:rgba(255,107,0,0.04);">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--orange);margin-bottom:6px;">SYMPTOM</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED off, fans run at full speed</div>
+        <div style="font-size:10px;color:var(--orange);">→ Check: 78L05 dead or C2 shorted (5V rail gone)</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid rgba(255,107,0,0.3);border-radius:4px;background:rgba(255,107,0,0.04);">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--orange);margin-bottom:6px;">SYMPTOM</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED on, fans full speed, pot does nothing</div>
+        <div style="font-size:10px;color:var(--orange);">→ Check: C3 open (primary fault on this unit), NE555 dead</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid rgba(255,107,0,0.3);border-radius:4px;background:rgba(255,107,0,0.04);">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--orange);margin-bottom:6px;">SYMPTOM</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED on, fans stopped, pot does nothing</div>
+        <div style="font-size:10px;color:var(--orange);">→ Check: C3 shorted, R1 open, or Pin 4 pulled low</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid rgba(255,221,68,0.3);border-radius:4px;background:rgba(255,221,68,0.04);">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--yellow);margin-bottom:6px;">SYMPTOM</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Pot has reduced range — can't reach min or max</div>
+        <div style="font-size:10px;color:var(--yellow);">→ Check: D1 or D2 leaky/open — diode test both</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid rgba(255,221,68,0.3);border-radius:4px;background:rgba(255,221,68,0.04);">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--yellow);margin-bottom:6px;">SYMPTOM</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Fan speed hunts / fluctuates randomly</div>
+        <div style="font-size:10px;color:var(--yellow);">→ Check: C2 open (noisy 5V rail), or C4 open (noisy CV pin)</div>
+      </div>
+      <div style="padding:14px 16px;border:1px solid rgba(0,255,65,0.2);border-radius:4px;background:rgba(0,255,65,0.03);">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--trace);margin-bottom:6px;">SYMPTOM</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED dark, everything else works normally</div>
+        <div style="font-size:10px;color:var(--trace);">→ Check: R3 open or LED1 dead — purely cosmetic</div>
+      </div>
+    </div>
+
+    <div class="fault-section-grid">
+      <!-- Power network faults -->
+      <div>
+        <div class="fault-group-title">⚡ POWER INPUT FAULTS</div>
+        <table class="fault-table">
+          <thead><tr><th>COMPONENT</th><th>FAILURE MODE</th><th>SEVERITY</th><th>SYMPTOM</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="fault-comp">F1</span></td>
+              <td>Open (blown)</td>
+              <td><span class="fault-sev sev-dead">DEAD</span></td>
+              <td>Total loss of power. No LED, no fans, nothing.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp">C1</span></td>
+              <td>Short circuit</td>
+              <td><span class="fault-sev sev-dead">DEAD</span></td>
+              <td>12V rail shorted to GND, blows fuse immediately. Replace C1 before replacing fuse.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp">C1</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-warn">WARN</span></td>
+              <td>No input filtering. Board likely still works but may be noisy under varying load.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Regulation faults -->
+      <div>
+        <div class="fault-group-title">⬇ REGULATION FAULTS</div>
+        <table class="fault-table">
+          <thead><tr><th>COMPONENT</th><th>FAILURE MODE</th><th>SEVERITY</th><th>SYMPTOM</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="fault-comp blue">78L05</span></td>
+              <td>Dead / no output</td>
+              <td><span class="fault-sev sev-err">ERROR</span></td>
+              <td>5V rail = 0V. NE555 unpowered, Pin 3 floats high, fans run full speed. LED off.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp blue">C2</span></td>
+              <td>Short circuit</td>
+              <td><span class="fault-sev sev-err">ERROR</span></td>
+              <td>5V rail collapses. 78L05 overloads and gets hot. Same symptom as dead regulator.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp blue">C2</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-warn">WARN</span></td>
+              <td>5V rail unfiltered and noisy. NE555 oscillates erratically. Fan speed hunts randomly.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PWM oscillator faults -->
+      <div>
+        <div class="fault-group-title">〜 PWM OSCILLATOR FAULTS</div>
+        <table class="fault-table">
+          <thead><tr><th>COMPONENT</th><th>FAILURE MODE</th><th>SEVERITY</th><th>SYMPTOM</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="fault-comp">C3</span></td>
+              <td>Open circuit ⚠ THIS UNIT</td>
+              <td><span class="fault-sev sev-err">ERROR</span></td>
+              <td>Timing cap gone. Pin 2/6 stuck high. Pin 3 stuck high. Fans locked full speed, pot dead.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp">C3</span></td>
+              <td>Short circuit</td>
+              <td><span class="fault-sev sev-err">ERROR</span></td>
+              <td>Pin 2/6 clamped to GND. Pin 3 stuck low. Fans completely stopped.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp">NE555</span></td>
+              <td>Dead IC</td>
+              <td><span class="fault-sev sev-err">ERROR</span></td>
+              <td>No oscillation. Pin 3 stuck high (fans full speed) or low (fans stop) depending on failure mode.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp">R1</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-err">ERROR</span></td>
+              <td>No charge path. C3 never charges. Pin 3 stuck low. Fans stopped.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp">R2</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-warn">WARN</span></td>
+              <td>Discharge path broken. Pot loses most of its range. Speed stuck near minimum.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp green">D1</span></td>
+              <td>Leaky ⚠ THIS UNIT</td>
+              <td><span class="fault-sev sev-warn">WARN</span></td>
+              <td>Measured 2.3V reverse (should be OL). Reduced pot range — can't reach low fan speeds.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp green">D1 / D2</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-warn">WARN</span></td>
+              <td>Pot controls only half the duty cycle range. Min or max fan speed unreachable.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp green">C4</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-warn">WARN</span></td>
+              <td>CV pin unfiltered. NE555 comparator thresholds shift with noise. Erratic speed.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Indicator faults -->
+      <div>
+        <div class="fault-group-title">◉ INDICATOR FAULTS</div>
+        <table class="fault-table">
+          <thead><tr><th>COMPONENT</th><th>FAILURE MODE</th><th>SEVERITY</th><th>SYMPTOM</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="fault-comp green">R3</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-ok">COSMETIC</span></td>
+              <td>LED dark. All fan control working normally. No functional impact.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp green">LED1</span></td>
+              <td>Open circuit</td>
+              <td><span class="fault-sev sev-ok">COSMETIC</span></td>
+              <td>LED dark. No functional impact.</td>
+            </tr>
+            <tr>
+              <td><span class="fault-comp green">LED1</span></td>
+              <td>Short circuit</td>
+              <td><span class="fault-sev sev-warn">WARN</span></td>
+              <td>R3 now limits into a dead short. 5V rail slightly loaded. R3 gets warm. Fan control degraded.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Measurement guide -->
+    <div class="fault-group-title">MEASUREMENT GUIDE — BOARD POWERED</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px;">
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
+        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">12V RAIL (post-fuse)</div>
+        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--orange);">11.8–12.2V</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Measure at F1 output or SATA/Barrel input side</div>
+      </div>
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
+        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">5V RAIL (Vout 78L05)</div>
+        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--blue);">4.9–5.1V</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Measure at NE555 Pin 8 vs GND</div>
+      </div>
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
+        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">NE555 PIN 3 (healthy)</div>
+        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--trace);">0.5–4.5V</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Should oscillate — average ~2.5V. Stuck = fault.</div>
+      </div>
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
+        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">NE555 PINS 2/6 (healthy)</div>
+        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--trace);">1.7–3.3V</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Oscillates between ⅓ and ⅔ of Vcc. Stuck = fault.</div>
+      </div>
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
+        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">NE555 PIN 5 (CV)</div>
+        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--trace);">~3.3V</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Should be ⅔ × Vcc = 3.31V. Stable.</div>
+      </div>
+      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
+        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">D1/D2 DIODE TEST (off)</div>
+        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--yellow);">0.5–0.7V / OL</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Forward ~0.6V. Reverse must be OL. Any reading = leaky.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── REPAIR LOG ── -->
+<section id="repair">
+  <div class="container">
+    <div class="section-eyebrow">SECTION 04</div>
+    <div class="section-title">REPAIR LOG</div>
+    <div class="section-rule"></div>
+    <p class="section-intro">
+      Two units received with identical failure modes. Both failed in the same way, suggesting a bad batch of capacitors
+      from the factory — a known phenomenon called capacitor plague affecting electrolytics and some ceramic batches.
+    </p>
+
+    <div class="repair-grid">
+      <div class="finding-card fault">
+        <div class="finding-label">PRIMARY FAULT · BOTH UNITS</div>
+        <div class="finding-comp orange">C3 — OPEN CIRCUIT</div>
+        <div class="finding-detail">
+          Timing capacitor between NE555 Pin 2/6 and GND. Both units measured 0.002–0.005µF instead of 33nF.
+          With the timing cap dead open, Pin 2/6 is pulled high through the timing network and stays there —
+          the 555 output latches high, driving all fans to full speed permanently.
+          Potentiometer has zero effect.
+        </div>
+        <div class="finding-fix">→ REPLACE: 33nF 0603 MLCC ceramic · 10V+ rating · Qty: 2 (one per board)</div>
+      </div>
+
+      <div class="finding-card bad">
+        <div class="finding-label">SECONDARY FAULT · UNIT 1</div>
+        <div class="finding-comp red">D1 — LEAKY DIODE</div>
+        <div class="finding-detail">
+          Diode test with power off: Forward = 0.6V ✓ (normal). Reverse = 2.3V ✗ (should be OL).
+          A healthy diode blocks completely in reverse — any reading other than OL indicates the diode
+          junction is degraded and conducting slightly in the wrong direction.
+          Effect: Compressed pot range, reduced ability to reach minimum fan speed once C3 is replaced.
+        </div>
+        <div class="finding-fix">→ REPLACE: 1N4148 or 1N914 signal diode · SOD-123 SMD or through-hole</div>
+      </div>
+
+      <div class="finding-card ok">
+        <div class="finding-label">TESTED HEALTHY</div>
+        <div class="finding-comp green">78L05 · NE555 · R1 · R2 · R3 · C4</div>
+        <div class="finding-detail">
+          All measured within specification. 78L05 output confirmed 4.97V.
+          NE555 Vcc (Pin 8) confirmed 4.97V. C4 measured ~12nF (nominal 10nF, within tolerance).
+          Potentiometer sweeps cleanly from 3.8kΩ to 89.8kΩ (nominal 90kΩ).
+        </div>
+      </div>
+
+      <div class="finding-card ok">
+        <div class="finding-label">RECOMMENDED REPAIR PARTS</div>
+        <div class="finding-comp blue">PARTS LIST</div>
+        <div class="finding-detail" style="line-height:2;">
+          × 2 — 33nF 0603 MLCC ceramic (C3 replacement, one per board)<br>
+          × 2 — 1N4148 SOD-123 signal diode (D1, and D2 as precaution)<br>
+          Order qty 10 of capacitors — same batch likely affects C4 too over time.
+        </div>
+        <div class="finding-fix">→ Check D2 on both units before reassembly — same diode test procedure</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── INTERACTIVE ── -->
+<section id="interactive">
+  <div class="container">
+    <div class="section-eyebrow">SECTION 05</div>
+    <div class="section-title">INTERACTIVE SCHEMATIC</div>
+    <div class="section-rule"></div>
+    <p class="section-intro">
+      Full circuit schematic with live fault simulation. Select a fault scenario to see how it affects voltages,
+      the PWM waveform, and fan behavior. Use the pot slider to adjust simulated speed when the circuit is healthy.
+    </p>
+
+    <div class="schematic-controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">FAULT:</span>
+        <select class="ctrl-select" id="faultSel" onchange="setFault(this.value)">
+          <option value="ok">✓ Normal Operation</option>
+          <optgroup label="── Power Stage ──">
+            <option value="fuse_blown">F1 — Fuse Blown</option>
+            <option value="reg_dead">78L05 — Regulator Dead</option>
+            <option value="c1_short">C1 — Input Cap Shorted</option>
+            <option value="c2_open">C2 — Output Cap Open</option>
+            <option value="c2_short">C2 — Output Cap Shorted</option>
+          </optgroup>
+          <optgroup label="── PWM Oscillator ──">
+            <option value="ctiming_open" selected>C3 — Open (This Unit's Fault)</option>
+            <option value="ctiming_short">C3 — Shorted</option>
+            <option value="r1_open">R1 — Open</option>
+            <option value="r2_open">R2 — Open</option>
+            <option value="d1_open">D1 — Open/Leaky</option>
+            <option value="d2_open">D2 — Open</option>
+            <option value="ne555_dead">NE555 — Dead IC</option>
+            <option value="pin4_low">NE555 — Pin 4 Pulled Low</option>
+          </optgroup>
+          <optgroup label="── Indicator ──">
+            <option value="r3_open">R3 — Open (LED Dark)</option>
+            <option value="led_short">LED1 — Shorted</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">POT:</span>
+        <input type="range" class="ctrl-range" id="potRange" min="0" max="100" value="50">
+        <span id="potVal">50%</span>
+      </div>
+    </div>
+
+    <div class="schematic-wrap">
+      <canvas id="simCanvas"></canvas>
+      <div class="sim-sidebar">
+        <div class="sim-pane">
+          <div class="sim-pane-title">⚡ POWER RAILS</div>
+          <div class="volt-row"><div class="volt-label"><span>12V Rail</span><span id="sv12">12.0V</span></div><div class="volt-bar"><div class="volt-fill" id="sf12" style="width:100%;background:#ff6b00;box-shadow:0 0 4px #ff6b00"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>5V Rail</span><span id="sv5">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
+        </div>
+        <div class="sim-pane">
+          <div class="sim-pane-title">📊 NE555 NODES</div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 8 Vcc</span><span id="sv8">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf8" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 2/6</span><span id="sv26">~2.5V osc</span></div><div class="volt-bar"><div class="volt-fill" id="sf26" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 3 Out</span><span id="sv3">~2.5V avg</span></div><div class="volt-bar"><div class="volt-fill" id="sf3" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 5 CV</span><span id="sv5cv">3.31V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5cv" style="width:27%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
+          <div class="pwm-canvas-wrap"><span>PIN 3 PWM</span><canvas id="pwmCanvas"></canvas></div>
+        </div>
+        <div class="sim-pane">
+          <div class="sim-pane-title">💨 FAN OUTPUTS</div>
+          <div class="fan-grid" id="fanGrid"></div>
+        </div>
+        <div class="sim-pane" style="flex:1">
+          <div class="sim-pane-title">🔧 DIAGNOSIS</div>
+          <div class="fault-banner fb-err" id="faultBanner">
+            ✗ C3 OPEN CIRCUIT<br>Pin 2/6 stuck HIGH<br>Pin 3 locked HIGH<br>Fans full speed — pot dead<br><br>Fix: Replace C3 (33nF 0603)
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:9px;color:var(--dim);letter-spacing:1px;margin-top:12px;text-align:center;">
+      SCROLL TO ZOOM · DRAG TO PAN · TRACES SHOW CORRECTED TOPOLOGY
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>UENORTH FAN-K11 · CIRCUIT DOCUMENTATION · REVERSE ENGINEERED 2026</p>
+    <p style="margin-top:8px;font-size:9px;">
+      <a href="https://github.com">VIEW ON GITHUB</a> &nbsp;·&nbsp;
+      Built with ♥ and a multimeter
+    </p>
+  </div>
+</footer>
+
+
+<!-- ── Scripts — load order matters:
+     data.js   : COMP_DEFS, POSITIONS, WIRES, FAULTS  (pure data, no DOM)
+     draw.js   : drawing primitives + drawSim()        (needs sctx from sim.js)
+     sim.js    : canvas refs, state, animation loop    (needs FAULTS + drawSim)
+     thumb.js  : hero PCB thumbnail                    (needs canvas in DOM)
+     nav.js    : scroll-spy                            (needs sections in DOM)
+  ── -->
+<script src="js/data.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/thumb.js"></script>
+<script src="js/nav.js"></script>
+</body>
+</html>
