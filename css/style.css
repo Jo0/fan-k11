@@ -91,7 +91,10 @@ nav {
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
 /* ── Layout ── */
-.container { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+.container { max-width: 1600px; margin: 0 auto; padding: 0 48px; }
+
+/* ── Fluid type scale ── */
+html { font-size: clamp(14px, 1.1vw, 18px); }
 
 /* ── Hero ── */
 #hero {
@@ -106,7 +109,7 @@ nav {
   align-items: center;
 }
 .hero-eyebrow {
-  font-size: 10px;
+  font-size: 0.65rem;
   letter-spacing: 4px;
   color: var(--dim);
   margin-bottom: 16px;
@@ -114,7 +117,7 @@ nav {
 .hero-title {
   font-family: 'Orbitron', monospace;
   font-weight: 900;
-  font-size: 36px;
+  font-size: clamp(28px, 3.5vw, 56px);
   letter-spacing: 4px;
   color: var(--trace);
   text-shadow: 0 0 30px rgba(0,255,65,0.4);
@@ -123,13 +126,13 @@ nav {
 }
 .hero-sub {
   font-family: 'Orbitron', monospace;
-  font-size: 14px;
+  font-size: clamp(11px, 1.1vw, 18px);
   letter-spacing: 3px;
   color: var(--dim);
   margin-bottom: 28px;
 }
 .hero-desc {
-  font-size: 13px;
+  font-size: clamp(12px, 0.9vw, 15px);
   color: var(--text-dim);
   line-height: 1.8;
   margin-bottom: 28px;
@@ -143,12 +146,12 @@ nav {
 }
 .stat-val {
   font-family: 'Orbitron', monospace;
-  font-size: 22px;
+  font-size: clamp(18px, 2vw, 30px);
   color: var(--trace);
   display: block;
   text-shadow: 0 0 12px rgba(0,255,65,0.5);
 }
-.stat-label { font-size: 9px; color: var(--dim); letter-spacing: 2px; }
+.stat-label { font-size: clamp(8px, 0.6vw, 11px); color: var(--dim); letter-spacing: 2px; }
 
 .hero-board {
   position: relative;
@@ -178,14 +181,14 @@ section {
   border-bottom: 1px solid var(--border);
 }
 .section-eyebrow {
-  font-size: 9px;
+  font-size: clamp(8px, 0.6vw, 11px);
   letter-spacing: 4px;
   color: var(--dim);
   margin-bottom: 10px;
 }
 .section-title {
   font-family: 'Orbitron', monospace;
-  font-size: 20px;
+  font-size: clamp(16px, 1.6vw, 26px);
   font-weight: 700;
   letter-spacing: 3px;
   color: var(--trace);
@@ -198,10 +201,10 @@ section {
   margin-bottom: 32px;
 }
 .section-intro {
-  font-size: 13px;
+  font-size: clamp(12px, 0.85vw, 15px);
   color: var(--text-dim);
   line-height: 1.9;
-  max-width: 720px;
+  max-width: 860px;
   margin-bottom: 48px;
 }
 
@@ -236,13 +239,13 @@ section {
 }
 .net-card-title {
   font-family: 'Orbitron', monospace;
-  font-size: 11px;
+  font-size: clamp(10px, 0.75vw, 13px);
   letter-spacing: 2px;
   color: var(--label);
 }
-.net-card-sub { font-size: 9px; color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
+.net-card-sub { font-size: clamp(8px, 0.6vw, 10px); color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
 .net-card-body { padding: 18px 20px; }
-.net-card-body p { font-size: 12px; color: var(--text-dim); line-height: 1.8; margin-bottom: 12px; }
+.net-card-body p { font-size: clamp(11px, 0.8vw, 14px); color: var(--text-dim); line-height: 1.8; margin-bottom: 12px; }
 .net-card-body p:last-child { margin-bottom: 0; }
 
 .comp-pills {
@@ -287,7 +290,7 @@ section {
 
 .fault-group-title {
   font-family: 'Orbitron', monospace;
-  font-size: 11px;
+  font-size: clamp(10px, 0.75vw, 13px);
   letter-spacing: 3px;
   color: var(--label);
   margin-bottom: 16px;
@@ -297,11 +300,11 @@ section {
 .fault-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: clamp(10px, 0.75vw, 13px);
 }
 .fault-table th {
   text-align: left;
-  font-size: 8px;
+  font-size: clamp(7px, 0.55vw, 10px);
   letter-spacing: 2px;
   color: var(--dim);
   padding: 0 10px 8px 0;
@@ -312,7 +315,7 @@ section {
   border-bottom: 1px solid rgba(26,58,26,0.5);
   vertical-align: top;
   color: var(--text-dim);
-  font-size: 11px;
+  font-size: clamp(10px, 0.75vw, 13px);
   line-height: 1.5;
 }
 .fault-table tr:last-child td { border-bottom: none; }
