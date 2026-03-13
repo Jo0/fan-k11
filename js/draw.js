@@ -9,9 +9,9 @@
 // Using a uniform scale ensures the schematic never distorts regardless of
 // canvas size — if the canvas isn't exactly 3:2, we letterbox on that axis.
 
-function SX(v) { return simOX + v * simScale; }   // world x → canvas x
-function SY(v) { return simOY + v * simScale; }   // world y → canvas y
-function SS(v) { return v * simScale; }            // world dimension → canvas size (no offset)
+function SX(v) { return vpPanX + (simOX + v * simScale) * vpZoom; }   // world x → canvas x
+function SY(v) { return vpPanY + (simOY + v * simScale) * vpZoom; }   // world y → canvas y
+function SS(v) { return v * simScale * vpZoom; }                       // world dimension → canvas size
 
 // ── Primitive helpers ─────────────────────────────────────────────────────────
 
@@ -230,21 +230,22 @@ function drawSim(){
   sctx.beginPath();sctx.roundRect(SX(30),SY(30),SS(780),SS(500),SS(6));sctx.fill();sctx.stroke();
   sctx.shadowBlur=0;sctx.restore();
 
+  // ── WIRES START ── (editor.html regenerates everything between these markers)
   // GND rail
-  sw(35,530,810,530,'#1a4a1a',false);
+  sw(35,530,720,530,'#1a4a1a',false);
   sctx.save();sctx.strokeStyle='#1a4a1a';sctx.lineWidth=1;sctx.setLineDash([4,4]);
-  sctx.beginPath();sctx.moveTo(SX(35),SY(530));sctx.lineTo(SX(810),SY(530));sctx.stroke();
+  sctx.beginPath();sctx.moveTo(SX(35),SY(530));sctx.lineTo(SX(720),SY(530));sctx.stroke();
   sctx.setLineDash([]);sctx.restore();
   slbl(420,538,'── COMMON GND ──','#1a4a1a',7);
 
   // 12V rail
   const V12Y=65;
-  sw(200,390,200,V12Y,pF());sw(200,V12Y,810,V12Y,pF());
+  sw(200,390,200,V12Y,pF());sw(200,V12Y,680,V12Y,pF());
   slbl(550,57,'12V RAIL → FAN PIN 1',pF(),7);
 
   // 5V rail
   const V5Y=160;
-  sw(680,300,680,V5Y,p5());sw(200,V5Y,810,V5Y,p5());
+  sw(680,300,680,V5Y,p5());sw(200,V5Y,720,V5Y,p5());
   sdot(680,V5Y,p5());slbl(550,152,'5V RAIL',p5(),7);
 
   // SATA → FUSE
@@ -270,53 +271,59 @@ function drawSim(){
   sw(610,180,610,V5Y,p5());sdot(610,V5Y,p5());
   // R3 → LED → GND
   sw(610,174,610,145,pg());
-  sw(610,119,610,530,pg());sdot(610,530,'#1a4a1a');
+  sw(610,138,610,155,pg());sw(610,155,640,155,pg());sw(640,155,640,530,pg());sdot(640,530,'#1a4a1a');
 
-  // REG → IC555 P8 + P4
-  sw(630,300,380,300,p5());sw(380,300,380,380,p5());sdot(380,300,p5());
-  slbl(505,293,'Vout→P8/P4',p5(),6.5);
+  // 5V rail → Pin8 Vcc: tap rail at x=430, approach Pin8 from right
+  sw(430,160,430,388,p5());sw(430,388,410,388,p5());sdot(430,160,p5());
+  slbl(425,375,'5V→P8',p5(),6.5);
+  // 5V → P4 RST: bypass x=350 via x=330
+  sw(330,160,330,418,p5());sw(330,418,350,418,p5());sdot(330,160,p5());
+  // P1 GND: jog left to x=340 to clear PWM wire at x=350
+  sw(350,388,340,388,pg());sw(340,388,340,530,pg());sdot(340,530,'#1a4a1a');
 
-  // R1 → 5V rail + down to P7
-  sw(610,225,610,V5Y,p5());sdot(610,V5Y,p5());
+  // R1 left lead (600,225) → 5V rail; right lead (620,225) → P7 bus
+  sw(600,225,600,160,p5());sdot(600,160,p5());
   const R1c=iF('R1')?'#252525':p5();
-  sw(610,237,610,350,R1c);
-  // R2 down to P7
+  sw(620,225,620,350,R1c);
+  // R2 left lead (480,480) → P7 bus; right lead (500,480) met by D2 cathode wire
   const R2c=iF('R2')?'#252525':R1c;
-  sw(490,480,490,350,R2c);
-  // D1 Anode up to P7
-  sw(490,430,490,350,iF('D1')?'#252525':'#ffdd44');
+  sw(480,480,480,350,R2c);
   // P7 bus
-  sw(490,350,615,350,R1c);sdot(490,350,R1c);sdot(610,350,R1c);
+  sw(410,350,620,350,R1c);sdot(480,350,R1c);sdot(620,350,R1c);sdot(410,350,R1c);
   slbl(550,342,'P7 NODE',R1c,6.5);
-  sw(610,350,610,380,R1c);sdot(615,350,R1c);
+  sw(410,350,410,398,R1c);
 
-  // R2 → D2K
-  sw(490,480,560,480,R2c);
-  // D2A → POT right
-  sw(560,416,560,310,iF('D2')?'#252525':'#ffdd44');sdot(560,310,'#ffdd44');
-  sw(560,310,535,310,iF('D2')?'#252525':'#ffdd44');
-  // POT L+wiper → D1K
-  sw(465,310,490,310,iF('D1')?'#252525':'#ffdd44');sdot(490,310,'#ffdd44');
-  sw(490,310,490,416,iF('D1')?'#252525':'#ffdd44');
+  // D2 anode (549,430) → POT right leg (518,310)
+  sw(549,430,549,310,iF('D2')?'#252525':'#ffdd44');sw(549,310,518,310,iF('D2')?'#252525':'#ffdd44');
+  // D2 cathode (569,430) → R2 right lead (500,480)
+  sw(569,430,569,480,iF('D2')?'#252525':'#ffdd44');sw(569,480,500,480,iF('D2')?'#252525':'#ffdd44');
+  // D1 anode (479,430) → POT left/wiper (482,310)
+  sw(479,430,479,310,iF('D1')?'#252525':'#ffdd44');sw(479,310,482,310,iF('D1')?'#252525':'#ffdd44');
+  // D1 cathode (499,430) → P2/6 node via Pin6 (410,408)
+  sw(499,430,499,408,iF('D1')?'#252525':'#ffdd44');sw(499,408,410,408,iF('D1')?'#252525':'#ffdd44');sdot(410,408,iF('D1')?'#252525':'#ffdd44');
 
   // POT wiper → P2/6
-  sw(500,345,380,345,pg());sw(380,345,380,380,pg());sdot(380,380,pg());
+  sw(500,345,350,345,pg());sw(350,345,350,398,pg());sdot(350,345,pg());
   slbl(440,337,'wiper→P2/6',pg(),6.5);
+  // Pin2 ↔ Pin6 bridge: route inside IC box via x=380 to avoid Pin7 at (410,398)
+  sw(350,398,380,398,pg());sw(380,398,380,408,pg());sw(380,408,410,408,pg());sdot(410,408,pg());
 
   // C3 → P2/6
-  sw(660,390,660,380,iF('CT')?'#333':'#ff6b00');sw(660,380,410,380,iF('CT')?'#333':'#ff6b00');
+  sw(660,390,660,408,iF('CT')?'#333':'#ff6b00');sw(660,408,410,408,iF('CT')?'#333':'#ff6b00');
   sw(660,402,660,530,'#1a4a1a');sdot(660,530,'#1a4a1a');
   slbl(535,371,'C3→P2/6',iF('CT')?'#333':'#ff6b00',6.5);
 
   // C4 → P5
   sw(710,390,710,V5Y,p5());sdot(710,V5Y,p5());
   sw(710,402,710,530,'#1a4a1a');sdot(710,530,'#1a4a1a');
-  sw(710,390,410,390,p5());
+  sw(710,390,410,390,p5());sw(410,390,410,418,p5());
   slbl(560,381,'C4→P5',p5(),6.5);
 
   // P3 → fans
-  sw(350,420,350,V12Y+15,p3c);sw(350,V12Y+15,810,V12Y+15,p3c);
+  sw(350,408,350,V12Y+15,p3c);sw(350,V12Y+15,440,V12Y+15,p3c);
   slbl(580,V12Y+23,'P3→PWM→Fan Pin4',p3c,6.5);
+
+  // ── WIRES END ──
 
   // Per-fan drops
   [180,230,280,330,380,430].forEach((fx,i)=>{

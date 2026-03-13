@@ -226,6 +226,70 @@ document.getElementById('potRange').addEventListener('input', function () {
   drawPWM();
 });
 
+// ── Viewport zoom / pan ───────────────────────────────────────────────────────
+let vpZoom = 1, vpPanX = 0, vpPanY = 0;
+
+function clampPan() {
+  const margin = 100;
+  const ox = simOX * vpZoom, oy = simOY * vpZoom;
+  const sw = 840 * simScale * vpZoom, sh = 560 * simScale * vpZoom;
+  vpPanX = Math.max(margin - ox - sw, Math.min(simW - margin - ox, vpPanX));
+  vpPanY = Math.max(margin - oy - sh, Math.min(simH - margin - oy, vpPanY));
+}
+
+simCanvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = simCanvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (simCanvas.width  / rect.width);
+  const my = (e.clientY - rect.top)  * (simCanvas.height / rect.height);
+
+  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+    // Horizontal thumb-wheel → pan X
+    vpPanX -= e.deltaX;
+    clampPan();
+  } else {
+    // Vertical scroll → zoom centred on cursor
+    const factor  = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+    const newZoom = Math.min(5, Math.max(1, vpZoom * factor));
+    const ratio   = newZoom / vpZoom;
+    vpPanX = mx * (1 - ratio) + vpPanX * ratio;
+    vpPanY = my * (1 - ratio) + vpPanY * ratio;
+    vpZoom = newZoom;
+    if (vpZoom <= 1.001) { vpZoom = 1; vpPanX = 0; vpPanY = 0; }
+    else clampPan();
+  }
+}, { passive: false });
+
+// Double-click resets to fit view
+simCanvas.addEventListener('dblclick', () => { vpZoom = 1; vpPanX = 0; vpPanY = 0; });
+
+// Click-drag panning
+let _dragActive = false, _dragStartX = 0, _dragStartY = 0, _panStartX = 0, _panStartY = 0;
+
+simCanvas.addEventListener('mousedown', e => {
+  _dragActive = true;
+  _dragStartX = e.clientX;
+  _dragStartY = e.clientY;
+  _panStartX  = vpPanX;
+  _panStartY  = vpPanY;
+  simCanvas.style.cursor = 'grabbing';
+});
+
+window.addEventListener('mousemove', e => {
+  if (!_dragActive) return;
+  vpPanX = _panStartX + (e.clientX - _dragStartX);
+  vpPanY = _panStartY + (e.clientY - _dragStartY);
+  clampPan();
+});
+
+window.addEventListener('mouseup', () => {
+  if (!_dragActive) return;
+  _dragActive = false;
+  simCanvas.style.cursor = 'grab';
+});
+
+simCanvas.style.cursor = 'grab';
+
 // ── Animation loop ────────────────────────────────────────────────────────────
 let simVisible = true;
 
