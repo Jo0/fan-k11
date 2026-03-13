@@ -14,7 +14,6 @@
     <a href="#overview">OVERVIEW</a>
     <a href="#networks">NETWORKS</a>
     <a href="#faults">FAULT GUIDE</a>
-    <a href="#repair">REPAIR LOG</a>
     <a href="#interactive">INTERACTIVE</a>
   </div>
   <div class="nav-dot"></div>
@@ -523,71 +522,10 @@
   </div>
 </section>
 
-<!-- ── REPAIR LOG ── -->
-<section id="repair">
-  <div class="container">
-    <div class="section-eyebrow">SECTION 04</div>
-    <div class="section-title">REPAIR LOG</div>
-    <div class="section-rule"></div>
-    <p class="section-intro">
-      Two units received with identical failure modes. Both failed in the same way, suggesting a bad batch of capacitors
-      from the factory — a known phenomenon called capacitor plague affecting electrolytics and some ceramic batches.
-    </p>
-
-    <div class="repair-grid">
-      <div class="finding-card fault">
-        <div class="finding-label">PRIMARY FAULT · BOTH UNITS</div>
-        <div class="finding-comp orange">C3 — OPEN CIRCUIT</div>
-        <div class="finding-detail">
-          Timing capacitor between NE555 Pin 2/6 and GND. Both units measured 0.002–0.005µF instead of 33nF.
-          With the timing cap dead open, Pin 2/6 is pulled high through the timing network and stays there —
-          the 555 output latches high, driving all fans to full speed permanently.
-          Potentiometer has zero effect.
-        </div>
-        <div class="finding-fix">→ REPLACE: 33nF 0603 MLCC ceramic · 10V+ rating · Qty: 2 (one per board)</div>
-      </div>
-
-      <div class="finding-card bad">
-        <div class="finding-label">SECONDARY FAULT · UNIT 1</div>
-        <div class="finding-comp red">D1 — LEAKY DIODE</div>
-        <div class="finding-detail">
-          Diode test with power off: Forward = 0.6V ✓ (normal). Reverse = 2.3V ✗ (should be OL).
-          A healthy diode blocks completely in reverse — any reading other than OL indicates the diode
-          junction is degraded and conducting slightly in the wrong direction.
-          Effect: Compressed pot range, reduced ability to reach minimum fan speed once C3 is replaced.
-        </div>
-        <div class="finding-fix">→ REPLACE: 1N4148 or 1N914 signal diode · SOD-123 SMD or through-hole</div>
-      </div>
-
-      <div class="finding-card ok">
-        <div class="finding-label">TESTED HEALTHY</div>
-        <div class="finding-comp green">78L05 · NE555 · R1 · R2 · R3 · C4</div>
-        <div class="finding-detail">
-          All measured within specification. 78L05 output confirmed 4.97V.
-          NE555 Vcc (Pin 8) confirmed 4.97V. C4 measured ~12nF (nominal 10nF, within tolerance).
-          Potentiometer sweeps cleanly from 3.8kΩ to 89.8kΩ (nominal 90kΩ).
-        </div>
-      </div>
-
-      <div class="finding-card ok">
-        <div class="finding-label">RECOMMENDED REPAIR PARTS</div>
-        <div class="finding-comp blue">PARTS LIST</div>
-        <div class="finding-detail" style="line-height:2;">
-          × 2 — 33nF 0603 MLCC ceramic (C3 replacement, one per board)<br>
-          × 2 — 1N4148 SOD-123 signal diode (D1, and D2 as precaution)<br>
-          Order qty 10 of capacitors — same batch likely affects C4 too over time.
-        </div>
-        <div class="finding-fix">→ Check D2 on both units before reassembly — same diode test procedure</div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
 <!-- ── INTERACTIVE ── -->
 <section id="interactive">
   <div class="container">
-    <div class="section-eyebrow">SECTION 05</div>
+    <div class="section-eyebrow">SECTION 04</div>
     <div class="section-title">INTERACTIVE SCHEMATIC</div>
     <div class="section-rule"></div>
     <p class="section-intro">
@@ -599,7 +537,7 @@
       <div class="ctrl-group">
         <span class="ctrl-label">FAULT:</span>
         <select class="ctrl-select" id="faultSel" onchange="setFault(this.value)">
-          <option value="ok">✓ Normal Operation</option>
+          <option value="ok" selected>✓ Normal Operation</option>
           <optgroup label="── Power Stage ──">
             <option value="fuse_blown">F1 — Fuse Blown</option>
             <option value="reg_dead">78L05 — Regulator Dead</option>
@@ -608,7 +546,7 @@
             <option value="c2_short">C2 — Output Cap Shorted</option>
           </optgroup>
           <optgroup label="── PWM Oscillator ──">
-            <option value="ctiming_open" selected>C3 — Open (This Unit's Fault)</option>
+            <option value="ctiming_open">C3 — Open (This Unit's Fault)</option>
             <option value="ctiming_short">C3 — Shorted</option>
             <option value="r1_open">R1 — Open</option>
             <option value="r2_open">R2 — Open</option>
@@ -685,6 +623,7 @@
 <script src="js/data.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/draw.js"></script>
+<script src="js/mini.js"></script>
 <script src="js/thumb.js"></script>
 <script src="js/nav.js"></script>
 </body>

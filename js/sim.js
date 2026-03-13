@@ -13,7 +13,7 @@ const pctx      = pwmCanvas.getContext('2d');
 
 // ── Simulation state ──────────────────────────────────────────────────────────
 let simW, simH;
-let faultKey = 'ctiming_open';   // default to this unit's actual fault
+let faultKey = 'ok';             // default to normal operation
 let potV     = 0.5;              // 0..1, maps to pot position
 let simTick  = 0;                // incremented each draw frame, used for fan animation
 let noiseOff = 0;                // phase offset for the noisy PWM simulation
