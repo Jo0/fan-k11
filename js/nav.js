@@ -3,7 +3,7 @@
 // Highlights the active nav link as the user scrolls through sections
 // ─────────────────────────────────────────────────────────────────────────────
 
-const NAV_SECTIONS = ['hero', 'overview', 'networks', 'faults', 'interactive'];
+const NAV_SECTIONS = ['hero', 'overview', 'interactive', 'networks', 'faults'];
 
 window.addEventListener('scroll', () => {
   const scrollY = window.scrollY + 80;   // offset for sticky nav height

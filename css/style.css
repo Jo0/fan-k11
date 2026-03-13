@@ -91,13 +91,13 @@ nav {
 .container { max-width: 1600px; margin: 0 auto; padding: 0 3rem; }
 
 /* ── Fluid type scale ──────────────────────────────────────────────────────────
-   At 1920px (1080p 24"): 1.25vw = 24px — comfortable desktop reading
-   At 3440px (ultrawide 34"): 1.25vw = 43px — similar angular size to 1080p
-   Floor of 15px protects phones and small screens.
-   Everything using rem/em scales automatically from this single value.
+   Sweet spot between original (too small) and previous attempt (too large):
+   At 1920px (1080p):    0.85vw = ~16px — same as a comfortable web default
+   At 3440px (ultrawide): 0.85vw = ~29px — meaningfully larger, not overwhelming
+   Floor of 14px covers tablets and small laptops.
    ─────────────────────────────────────────────────────────────────────────── */
 html {
-  font-size: clamp(15px, 1.25vw, 48px);
+  font-size: clamp(14px, 0.85vw, 36px);
   scroll-behavior: smooth;
 }
 

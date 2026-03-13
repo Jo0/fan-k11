@@ -12,9 +12,9 @@
   <div class="nav-logo">FAN-K11</div>
   <div class="nav-links">
     <a href="#overview">OVERVIEW</a>
+    <a href="#interactive">INTERACTIVE</a>
     <a href="#networks">NETWORKS</a>
     <a href="#faults">FAULT GUIDE</a>
-    <a href="#interactive">INTERACTIVE</a>
   </div>
   <div class="nav-dot"></div>
 </nav>
@@ -141,10 +141,90 @@
   </div>
 </section>
 
+<!-- ── INTERACTIVE ── -->
+<section id="interactive">
+  <div class="container">
+    <div class="section-eyebrow">SECTION 02</div>
+    <div class="section-title">INTERACTIVE SCHEMATIC</div>
+    <div class="section-rule"></div>
+    <p class="section-intro">
+      Full circuit schematic with live fault simulation. Select a fault scenario to see how it affects voltages,
+      the PWM waveform, and fan behavior. Use the pot slider to adjust simulated speed when the circuit is healthy.
+    </p>
+
+    <div class="schematic-controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">FAULT:</span>
+        <select class="ctrl-select" id="faultSel" onchange="setFault(this.value)">
+          <option value="ok" selected>✓ Normal Operation</option>
+          <optgroup label="── Power Stage ──">
+            <option value="fuse_blown">F1 — Fuse Blown</option>
+            <option value="reg_dead">78L05 — Regulator Dead</option>
+            <option value="c1_short">C1 — Input Cap Shorted</option>
+            <option value="c2_open">C2 — Output Cap Open</option>
+            <option value="c2_short">C2 — Output Cap Shorted</option>
+          </optgroup>
+          <optgroup label="── PWM Oscillator ──">
+            <option value="ctiming_open">C3 — Open (This Unit's Fault)</option>
+            <option value="ctiming_short">C3 — Shorted</option>
+            <option value="r1_open">R1 — Open</option>
+            <option value="r2_open">R2 — Open</option>
+            <option value="d1_open">D1 — Open/Leaky</option>
+            <option value="d2_open">D2 — Open</option>
+            <option value="ne555_dead">NE555 — Dead IC</option>
+            <option value="pin4_low">NE555 — Pin 4 Pulled Low</option>
+          </optgroup>
+          <optgroup label="── Indicator ──">
+            <option value="r3_open">R3 — Open (LED Dark)</option>
+            <option value="led_short">LED1 — Shorted</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">POT:</span>
+        <input type="range" class="ctrl-range" id="potRange" min="0" max="100" value="50">
+        <span id="potVal">50%</span>
+      </div>
+    </div>
+
+    <div class="schematic-wrap">
+      <canvas id="simCanvas"></canvas>
+      <div class="sim-sidebar">
+        <div class="sim-pane">
+          <div class="sim-pane-title">⚡ POWER RAILS</div>
+          <div class="volt-row"><div class="volt-label"><span>12V Rail</span><span id="sv12">12.0V</span></div><div class="volt-bar"><div class="volt-fill" id="sf12" style="width:100%;background:#ff6b00;box-shadow:0 0 4px #ff6b00"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>5V Rail</span><span id="sv5">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
+        </div>
+        <div class="sim-pane">
+          <div class="sim-pane-title">📊 NE555 NODES</div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 8 Vcc</span><span id="sv8">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf8" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 2/6</span><span id="sv26">~2.5V osc</span></div><div class="volt-bar"><div class="volt-fill" id="sf26" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 3 Out</span><span id="sv3">~2.5V avg</span></div><div class="volt-bar"><div class="volt-fill" id="sf3" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 5 CV</span><span id="sv5cv">3.31V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5cv" style="width:27%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
+          <div class="pwm-canvas-wrap"><span>PIN 3 PWM</span><canvas id="pwmCanvas"></canvas></div>
+        </div>
+        <div class="sim-pane">
+          <div class="sim-pane-title">💨 FAN OUTPUTS</div>
+          <div class="fan-grid" id="fanGrid"></div>
+        </div>
+        <div class="sim-pane" style="flex:1">
+          <div class="sim-pane-title">🔧 DIAGNOSIS</div>
+          <div class="fault-banner fb-ok" id="faultBanner">
+            ✓ All systems nominal<br>PWM ~22kHz oscillating<br>Pot controls fan speed
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.55rem;color:var(--dim);letter-spacing:1px;margin-top:0.75rem;text-align:center;">
+      TRACES SHOW CORRECTED TOPOLOGY · SELECT FAULT TO SIMULATE
+    </p>
+  </div>
+</section>
+
 <!-- ── NETWORKS ── -->
 <section id="networks">
   <div class="container">
-    <div class="section-eyebrow">SECTION 02</div>
+    <div class="section-eyebrow">SECTION 03</div>
     <div class="section-title">CIRCUIT NETWORKS</div>
     <div class="section-rule"></div>
     <p class="section-intro">
@@ -292,7 +372,7 @@
 <!-- ── FAULTS ── -->
 <section id="faults">
   <div class="container">
-    <div class="section-eyebrow">SECTION 03</div>
+    <div class="section-eyebrow">SECTION 04</div>
     <div class="section-title">FAULT GUIDE</div>
     <div class="section-rule"></div>
     <p class="section-intro">
@@ -522,85 +602,6 @@
   </div>
 </section>
 
-<!-- ── INTERACTIVE ── -->
-<section id="interactive">
-  <div class="container">
-    <div class="section-eyebrow">SECTION 04</div>
-    <div class="section-title">INTERACTIVE SCHEMATIC</div>
-    <div class="section-rule"></div>
-    <p class="section-intro">
-      Full circuit schematic with live fault simulation. Select a fault scenario to see how it affects voltages,
-      the PWM waveform, and fan behavior. Use the pot slider to adjust simulated speed when the circuit is healthy.
-    </p>
-
-    <div class="schematic-controls">
-      <div class="ctrl-group">
-        <span class="ctrl-label">FAULT:</span>
-        <select class="ctrl-select" id="faultSel" onchange="setFault(this.value)">
-          <option value="ok" selected>✓ Normal Operation</option>
-          <optgroup label="── Power Stage ──">
-            <option value="fuse_blown">F1 — Fuse Blown</option>
-            <option value="reg_dead">78L05 — Regulator Dead</option>
-            <option value="c1_short">C1 — Input Cap Shorted</option>
-            <option value="c2_open">C2 — Output Cap Open</option>
-            <option value="c2_short">C2 — Output Cap Shorted</option>
-          </optgroup>
-          <optgroup label="── PWM Oscillator ──">
-            <option value="ctiming_open">C3 — Open (This Unit's Fault)</option>
-            <option value="ctiming_short">C3 — Shorted</option>
-            <option value="r1_open">R1 — Open</option>
-            <option value="r2_open">R2 — Open</option>
-            <option value="d1_open">D1 — Open/Leaky</option>
-            <option value="d2_open">D2 — Open</option>
-            <option value="ne555_dead">NE555 — Dead IC</option>
-            <option value="pin4_low">NE555 — Pin 4 Pulled Low</option>
-          </optgroup>
-          <optgroup label="── Indicator ──">
-            <option value="r3_open">R3 — Open (LED Dark)</option>
-            <option value="led_short">LED1 — Shorted</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="ctrl-group">
-        <span class="ctrl-label">POT:</span>
-        <input type="range" class="ctrl-range" id="potRange" min="0" max="100" value="50">
-        <span id="potVal">50%</span>
-      </div>
-    </div>
-
-    <div class="schematic-wrap">
-      <canvas id="simCanvas"></canvas>
-      <div class="sim-sidebar">
-        <div class="sim-pane">
-          <div class="sim-pane-title">⚡ POWER RAILS</div>
-          <div class="volt-row"><div class="volt-label"><span>12V Rail</span><span id="sv12">12.0V</span></div><div class="volt-bar"><div class="volt-fill" id="sf12" style="width:100%;background:#ff6b00;box-shadow:0 0 4px #ff6b00"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>5V Rail</span><span id="sv5">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
-        </div>
-        <div class="sim-pane">
-          <div class="sim-pane-title">📊 NE555 NODES</div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 8 Vcc</span><span id="sv8">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf8" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 2/6</span><span id="sv26">~2.5V osc</span></div><div class="volt-bar"><div class="volt-fill" id="sf26" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 3 Out</span><span id="sv3">~2.5V avg</span></div><div class="volt-bar"><div class="volt-fill" id="sf3" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 5 CV</span><span id="sv5cv">3.31V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5cv" style="width:27%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
-          <div class="pwm-canvas-wrap"><span>PIN 3 PWM</span><canvas id="pwmCanvas"></canvas></div>
-        </div>
-        <div class="sim-pane">
-          <div class="sim-pane-title">💨 FAN OUTPUTS</div>
-          <div class="fan-grid" id="fanGrid"></div>
-        </div>
-        <div class="sim-pane" style="flex:1">
-          <div class="sim-pane-title">🔧 DIAGNOSIS</div>
-          <div class="fault-banner fb-err" id="faultBanner">
-            ✗ C3 OPEN CIRCUIT<br>Pin 2/6 stuck HIGH<br>Pin 3 locked HIGH<br>Fans full speed — pot dead<br><br>Fix: Replace C3 (33nF 0603)
-          </div>
-        </div>
-      </div>
-    </div>
-    <p style="font-size:9px;color:var(--dim);letter-spacing:1px;margin-top:12px;text-align:center;">
-      SCROLL TO ZOOM · DRAG TO PAN · TRACES SHOW CORRECTED TOPOLOGY
-    </p>
-  </div>
-</section>
 
 <footer>
   <div class="container">
