@@ -223,7 +223,7 @@ Left leg and wiper are **shorted together on the PCB**. Confirmed by physical tr
 |---------|-------------|
 | Board completely dead — no LED, no fans | F1 (blown fuse) or C1 (shorted) |
 | LED off, fans full speed | 78L05 dead, or C2 shorted |
-| LED on, fans full speed, pot does nothing | **C3 open** (primary fault) or NE555 dead |
+| LED on, fans full speed, pot does nothing | C3 open or NE555 dead |
 | LED on, fans stopped, pot does nothing | C3 shorted, R1 open, or Pin 4 pulled low |
 | Pot has reduced range | D1 or D2 leaky — diode test both |
 | Fan speed hunts / fluctuates randomly | C2 open (noisy 5V), or C4 open (noisy CV pin) |
@@ -245,7 +245,7 @@ Left leg and wiper are **shorted together on the PCB**. Confirmed by physical tr
 | Result | Meaning |
 |--------|---------|
 | Forward ~0.6V, Reverse OL | Healthy |
-| Forward ~0.6V, Reverse any reading | **Leaky — replace** |
+| Forward ~0.6V, Reverse any reading | Leaky — replace |
 | Forward OL | Open — replace |
 | Forward ~0V both directions | Shorted — replace |
 
