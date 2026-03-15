@@ -29,10 +29,14 @@ function fitSimToLayout() {
 }
 
 function resizeSim() {
-  const sidebar  = document.querySelector('.sim-sidebar');
-  const sidebarW = sidebar ? sidebar.offsetWidth : 240;
+  const sidebar = document.querySelector('.sim-sidebar');
+  // Detect stacked (mobile) layout: sidebar below canvas rather than beside it
+  const stacked = sidebar &&
+    sidebar.getBoundingClientRect().top >= simCanvas.getBoundingClientRect().bottom - 5;
+  const sidebarW = stacked ? 0 : (sidebar ? sidebar.offsetWidth : 240);
   simW = simCanvas.width  = simWrap.clientWidth - sidebarW;
-  simH = simCanvas.height = simWrap.clientHeight || 560;
+  simH = simCanvas.height = stacked ? (simCanvas.offsetHeight || 400)
+                                    : (simWrap.clientHeight   || 560);
 
   fitSimToLayout();
 
@@ -263,9 +267,11 @@ simCanvas.addEventListener('wheel', e => {
 simCanvas.addEventListener('dblclick', () => { vpZoom = 1; vpPanX = 0; vpPanY = 0; });
 
 // Click-drag panning
-let _dragActive = false, _dragStartX = 0, _dragStartY = 0, _panStartX = 0, _panStartY = 0;
+let _touchActive = false; // suppresses synthetic mouse events fired after touch
+let _dragActive  = false, _dragStartX = 0, _dragStartY = 0, _panStartX = 0, _panStartY = 0;
 
 simCanvas.addEventListener('mousedown', e => {
+  if (_touchActive) return;
   _dragActive = true;
   _dragStartX = e.clientX;
   _dragStartY = e.clientY;
@@ -275,21 +281,21 @@ simCanvas.addEventListener('mousedown', e => {
 });
 
 window.addEventListener('mousemove', e => {
-  if (!_dragActive) return;
+  if (_touchActive || !_dragActive) return;
   vpPanX = _panStartX + (e.clientX - _dragStartX);
   vpPanY = _panStartY + (e.clientY - _dragStartY);
   clampPan();
 });
 
 window.addEventListener('mouseup', () => {
-  if (!_dragActive) return;
+  if (_touchActive || !_dragActive) return;
   _dragActive = false;
   simCanvas.style.cursor = 'grab';
 });
 
 simCanvas.style.cursor = 'grab';
 
-// ── Component hover ───────────────────────────────────────────────────────────
+// ── Component hover / tap ─────────────────────────────────────────────────────
 let hoverSimComp = null;
 
 function simCanvasToWorld(cx, cy) {
@@ -299,24 +305,150 @@ function simCanvasToWorld(cx, cy) {
   };
 }
 
-simCanvas.addEventListener('mousemove', e => {
-  if (_dragActive) return;
-  const rect = simCanvas.getBoundingClientRect();
-  const cx = (e.clientX - rect.left) * (simCanvas.width  / rect.width);
-  const cy = (e.clientY - rect.top)  * (simCanvas.height / rect.height);
-  const w  = simCanvasToWorld(cx, cy);
-  let found = null;
+function _hitTestComp(cx, cy) {
+  const w = simCanvasToWorld(cx, cy);
   for (const [id, pos] of Object.entries(simPos)) {
     const bh = _BODY_HALF[id];
     if (!bh) continue;
-    if (Math.abs(w.x - pos.x) <= bh[0] && Math.abs(w.y - pos.y) <= bh[1]) {
-      found = id; break;
-    }
+    if (Math.abs(w.x - pos.x) <= bh[0] && Math.abs(w.y - pos.y) <= bh[1]) return id;
   }
-  hoverSimComp = found;
+  return null;
+}
+
+simCanvas.addEventListener('mousemove', e => {
+  if (_touchActive || _dragActive) return;
+  const rect = simCanvas.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) * (simCanvas.width  / rect.width);
+  const cy = (e.clientY - rect.top)  * (simCanvas.height / rect.height);
+  hoverSimComp = _hitTestComp(cx, cy);
 });
 
 simCanvas.addEventListener('mouseleave', () => { hoverSimComp = null; });
+
+// ── Touch interactions ────────────────────────────────────────────────────────
+
+// Pinch state
+let _pinchActive    = false;
+let _pinchStartDist = 0;
+let _pinchStartZoom = 1;
+let _pinchMidX = 0, _pinchMidY = 0;
+
+// Tap / double-tap state
+let _tapTime = 0, _tapX = 0, _tapY = 0;
+let _touchMovedPx = 0, _touchStartCX = 0, _touchStartCY = 0;
+
+function _touchCanvasXY(touch) {
+  const rect = simCanvas.getBoundingClientRect();
+  return {
+    cx: (touch.clientX - rect.left) * (simCanvas.width  / rect.width),
+    cy: (touch.clientY - rect.top)  * (simCanvas.height / rect.height),
+  };
+}
+
+function _pinchDist(touches) {
+  return Math.hypot(
+    touches[0].clientX - touches[1].clientX,
+    touches[0].clientY - touches[1].clientY
+  );
+}
+
+simCanvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  _touchActive = true;
+
+  if (e.touches.length === 2) {
+    _pinchActive    = true;
+    _dragActive     = false;
+    _pinchStartDist = _pinchDist(e.touches);
+    _pinchStartZoom = vpZoom;
+    const rect = simCanvas.getBoundingClientRect();
+    const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    _pinchMidX = (mx - rect.left) * (simCanvas.width  / rect.width);
+    _pinchMidY = (my - rect.top)  * (simCanvas.height / rect.height);
+  } else if (e.touches.length === 1) {
+    _pinchActive  = false;
+    _dragActive   = true;
+    const { cx, cy } = _touchCanvasXY(e.touches[0]);
+    _dragStartX   = e.touches[0].clientX;
+    _dragStartY   = e.touches[0].clientY;
+    _panStartX    = vpPanX;
+    _panStartY    = vpPanY;
+    _touchStartCX = cx;
+    _touchStartCY = cy;
+    _touchMovedPx = 0;
+  }
+}, { passive: false });
+
+simCanvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+
+  if (_pinchActive && e.touches.length === 2) {
+    const newDist = _pinchDist(e.touches);
+    const ratio   = newDist / _pinchStartDist;
+    const newZoom = Math.min(5, Math.max(1, _pinchStartZoom * ratio));
+    const zRatio  = newZoom / vpZoom;
+    vpPanX = _pinchMidX * (1 - zRatio) + vpPanX * zRatio;
+    vpPanY = _pinchMidY * (1 - zRatio) + vpPanY * zRatio;
+    vpZoom = newZoom;
+    if (vpZoom <= 1.001) { vpZoom = 1; vpPanX = 0; vpPanY = 0; }
+    else clampPan();
+
+  } else if (_dragActive && e.touches.length === 1) {
+    const dx = e.touches[0].clientX - _dragStartX;
+    const dy = e.touches[0].clientY - _dragStartY;
+    _touchMovedPx = Math.hypot(dx, dy);
+    vpPanX = _panStartX + dx;
+    vpPanY = _panStartY + dy;
+    clampPan();
+  }
+}, { passive: false });
+
+simCanvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  _pinchActive = false;
+
+  if (e.touches.length === 0) {
+    _dragActive = false;
+    // Delay clearing _touchActive to outlast synthetic mouse events (~300ms delay on mobile)
+    setTimeout(() => { _touchActive = false; }, 400);
+
+    if (_touchMovedPx < 8) {
+      const now = Date.now();
+      const cx = _touchStartCX, cy = _touchStartCY;
+
+      if (now - _tapTime < 300 && Math.hypot(cx - _tapX, cy - _tapY) < 40) {
+        // Double-tap: reset view
+        vpZoom = 1; vpPanX = 0; vpPanY = 0;
+        fitSimToLayout();
+        hoverSimComp = null;
+      } else {
+        // Single tap: toggle component value label
+        const hit = _hitTestComp(cx, cy);
+        hoverSimComp = (hit && hit !== hoverSimComp) ? hit : null;
+      }
+
+      _tapTime = now;
+      _tapX = cx;
+      _tapY = cy;
+    }
+
+  } else if (e.touches.length === 1) {
+    // Dropped from 2 fingers to 1 — resume pan
+    _dragActive   = true;
+    _dragStartX   = e.touches[0].clientX;
+    _dragStartY   = e.touches[0].clientY;
+    _panStartX    = vpPanX;
+    _panStartY    = vpPanY;
+    _touchMovedPx = 0;
+  }
+}, { passive: false });
+
+simCanvas.addEventListener('touchcancel', () => {
+  _touchActive = false;
+  _dragActive  = false;
+  _pinchActive = false;
+}, { passive: false });
 
 // ── Animation loop ────────────────────────────────────────────────────────────
 let simVisible = true;

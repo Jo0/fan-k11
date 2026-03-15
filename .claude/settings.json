@@ -1,0 +1,6 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash 'D:/Sandbox/fan-k11/.claude/statusline-command.sh'"
+  }
+}
