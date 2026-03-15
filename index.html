@@ -4,7 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UENORTH FAN-K11 — Circuit Documentation</title>
+<link rel="stylesheet" href="css/themes.css">
 <link rel="stylesheet" href="css/style.css">
+<!-- Set theme before first paint to prevent flash of wrong theme -->
+<script>
+  (function(){
+    var themes=['a','b','c','d','e'];
+    document.documentElement.setAttribute('data-theme',themes[Math.floor(Math.random()*themes.length)]);
+  })();
+</script>
 </head>
 
 <!-- ── NAV ── -->
@@ -16,6 +24,13 @@
     <a href="#networks">NETWORKS</a>
     <a href="#faults">FAULT GUIDE</a>
   </div>
+  <select class="nav-theme-sel" id="themeSel" onchange="setTheme(this.value)" aria-label="Color theme">
+    <option value="a">P31 · PHOSPHOR</option>
+    <option value="b">AMBER · P7</option>
+    <option value="c">COLD OXIDE</option>
+    <option value="d">W3C · DEFAULT</option>
+    <option value="e">W3C · DARK</option>
+  </select>
   <div class="nav-dot"></div>
 </nav>
 
@@ -618,6 +633,7 @@
      sim.js    : canvas refs, state, animation loop    (needs FAULTS + drawSim)
      nav.js    : scroll-spy                            (needs sections in DOM)
   ── -->
+<script src="js/theme.js"></script>
 <script src="js/data.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/sim.js"></script>

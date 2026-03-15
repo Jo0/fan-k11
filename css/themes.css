@@ -1,0 +1,119 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   themes.css — color token definitions for all three themes
+   Applied via data-theme attribute on <html>.
+   A fallback matching Theme A is set on :root so the page renders correctly
+   even if JS hasn't run yet.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Fallback (no data-theme set) — matches Theme A ── */
+:root {
+  --bg:        #070f09;
+  --surface:   #0d1a0f;
+  --border:    #1d4020;
+  --trace:     #00e636;
+  --trace-dim: #00561a;
+  --label:     #88ee88;
+  --dim:       #5a8a5a;
+  --orange:    #ff7320;
+  --blue:      #44aaff;
+  --yellow:    #ffdd44;
+  --red:       #ff4444;
+  --panel:     #050c06;
+  --text:      #cce8cc;
+  --text-dim:  #789a78;
+}
+
+/* ── Theme A — Refined P31 Phosphor ── */
+:root[data-theme="a"] {
+  --bg:        #070f09;
+  --surface:   #0d1a0f;
+  --border:    #1d4020;
+  --trace:     #00e636;
+  --trace-dim: #00561a;
+  --label:     #88ee88;
+  --dim:       #5a8a5a;
+  --orange:    #ff7320;
+  --blue:      #44aaff;
+  --yellow:    #ffdd44;
+  --red:       #ff4444;
+  --panel:     #050c06;
+  --text:      #cce8cc;
+  --text-dim:  #789a78;
+}
+
+/* ── Theme B — Amber Phosphor ── */
+:root[data-theme="b"] {
+  --bg:        #0f0b03;
+  --surface:   #161008;
+  --border:    #3a2a08;
+  --trace:     #ffaa00;
+  --trace-dim: #6b4400;
+  --label:     #ffcc66;
+  --dim:       #7a6030;
+  --orange:    #ff6030;
+  --blue:      #55aaff;
+  --yellow:    #ffee88;
+  --red:       #ff4444;
+  --panel:     #0b0802;
+  --text:      #eedda0;
+  --text-dim:  #998855;
+}
+
+/* ── Theme C — Cold Oxide ── */
+:root[data-theme="c"] {
+  --bg:        #080c10;
+  --surface:   #0d1219;
+  --border:    #1a2d40;
+  --trace:     #00d4ff;
+  --trace-dim: #004a66;
+  --label:     #66ccee;
+  --dim:       #4a6a80;
+  --orange:    #ff8040;
+  --blue:      #4488ff;
+  --yellow:    #ffcc44;
+  --red:       #ff4455;
+  --panel:     #05090d;
+  --text:      #b8d4e8;
+  --text-dim:  #5a7a90;
+}
+
+/* ── Theme D — W3C Default ── */
+/* Raw browser-default energy. White canvas, black text, classic link blue.
+   Yellow and orange pulled dark enough to stay legible on white. */
+:root[data-theme="d"] {
+  --bg:        #ffffff;
+  --surface:   #f0f0f0;
+  --border:    #999999;
+  --trace:     #0000bb;
+  --trace-dim: #000066;
+  --label:     #000000;
+  --dim:       #555555;
+  --orange:    #cc3300;
+  --blue:      #0055bb;
+  --yellow:    #886600;
+  --red:       #cc0000;
+  --panel:     #e4e4e4;
+  --text:      #111111;
+  --text-dim:  #444444;
+}
+
+/* ── Theme E — W3C Dark ── */
+/* Browser force-dark energy. Neutral gray canvas, off-white text, the
+   slightly-off link blue that auto dark-mode generates. Not designed dark,
+   just inverted — like Dark Reader ran over a plain HTML page. */
+:root[data-theme="e"] {
+  --bg:        #1a1a1a;
+  --surface:   #252525;
+  --border:    #444444;
+  --trace:     #7aafff;
+  --trace-dim: #2a4a88;
+  --label:     #e8e8e8;
+  --dim:       #888888;
+  --orange:    #ff8855;
+  --blue:      #66aaff;
+  --yellow:    #ccaa33;
+  --red:       #ff6666;
+  --panel:     #2e2e2e;
+  --text:      #e8e8e8;
+  --text-dim:  #aaaaaa;
+}
