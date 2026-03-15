@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fan K11 — Wire Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#c8c8c8;font-family:'Share Tech Mono',monospace;font-size:12px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+#toolbar{background:#111;border-bottom:1px solid #1e3a1e;padding:6px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+#toolbar h1{color:#00ff41;font-size:13px;margin-right:8px}
+#toolbar label{color:#888;display:flex;align-items:center;gap:4px;cursor:pointer}
+#toolbar input[type=checkbox]{accent-color:#00ff41}
+#toolbar span#modeLabel{color:#44aaff;min-width:220px}
+#helpBox{font-size:10px;color:#556655;line-height:1.7;padding:2px 0}
+#main{display:flex;flex:1;overflow:hidden}
+#canvasWrap{flex:3;position:relative;overflow:hidden;background:#0a0a0a}
+canvas{display:block;width:100%;height:100%;cursor:crosshair}
+#status{position:absolute;bottom:6px;left:8px;color:#444;font-size:10px;pointer-events:none}
+#sidebar{flex:1;min-width:210px;max-width:260px;background:#0e0e0e;border-left:1px solid #1e3a1e;display:flex;flex-direction:column;overflow:hidden}
+.sb-section{border-bottom:1px solid #1a2a1a;padding:8px}
+.sb-section h2{color:#00cc33;font-size:11px;margin-bottom:6px;letter-spacing:.05em}
+#wireList{flex:1;overflow-y:auto;padding:6px}
+#wireList .witem{padding:4px 6px;cursor:pointer;border-radius:3px;display:flex;align-items:center;gap:6px;margin-bottom:2px}
+#wireList .witem:hover{background:#1a2a1a}
+#wireList .witem.sel{background:#0a2a0a;outline:1px solid #00ff41}
+#wireList .wdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+#wireList .wlbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#aaa;font-size:10px}
+#exportBox{width:100%;height:90px;background:#060606;color:#00ff41;border:1px solid #1e3a1e;resize:none;font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px}
+#ptEditor{font-size:10px;color:#aaa;word-break:break-all;padding:2px 0}
+button{background:#0a1a0a;color:#00cc33;border:1px solid #1e3a1e;padding:4px 8px;cursor:pointer;font-family:inherit;font-size:10px;border-radius:3px}
+button:hover{background:#1a3a1a;color:#00ff41}
+button.active-tool{background:#1a2a00;color:#ffdd44;border-color:#ffdd44}
+#wireList::-webkit-scrollbar{width:4px}
+#wireList::-webkit-scrollbar-track{background:#0a0a0a}
+#wireList::-webkit-scrollbar-thumb{background:#1e3a1e}
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center}
+#modal.open{display:flex}
+#modalBox{background:#111;border:1px solid #00ff41;border-radius:6px;padding:20px 24px;max-width:480px;width:90%;box-shadow:0 0 30px #00ff4133}
+#modalBox h2{color:#00ff41;margin-bottom:14px;font-size:13px;letter-spacing:.08em}
+#modalBox table{width:100%;border-collapse:collapse;font-size:11px}
+#modalBox td{padding:4px 8px;vertical-align:top}
+#modalBox td:first-child{color:#44aaff;white-space:nowrap;padding-right:16px}
+#modalBox tr:nth-child(even) td{background:#0a0a0a}
+#modalBox .section{color:#00cc33;font-size:10px;padding:8px 8px 2px;letter-spacing:.05em}
+#modalClose{margin-top:16px;width:100%}
+</style>
+</head>
+<body>
+<div id="modal" onclick="if(event.target===this)closeHelp()">
+  <div id="modalBox">
+    <h2>⌨ WIRE EDITOR — INSTRUCTIONS</h2>
+    <table>
+      <tr><td colspan="2" class="section">DRAWING</td></tr>
+      <tr><td>Click terminal dot</td><td>Start a new wire</td></tr>
+      <tr><td>Click empty space</td><td>Add a waypoint (corner)</td></tr>
+      <tr><td>Click terminal / dbl-click</td><td>Finish the wire</td></tr>
+      <tr><td>Esc</td><td>Cancel wire in progress</td></tr>
+      <tr><td colspan="2" class="section">EDITING</td></tr>
+      <tr><td>Click near a wire</td><td>Select it</td></tr>
+      <tr><td>Click a point on selected wire</td><td>Select that point (yellow ring)</td></tr>
+      <tr><td>Arrow keys (point selected)</td><td>Nudge point by step amount</td></tr>
+      <tr><td>Click on selected wire</td><td>Insert a bend point there</td></tr>
+      <tr><td>Drag any point (● or □)</td><td>Move it; release near terminal to snap</td></tr>
+      <tr><td>Right-click a bend point</td><td>Delete that node (not the wire)</td></tr>
+      <tr><td>Delete / Backspace</td><td>Delete selected wire</td></tr>
+      <tr><td colspan="2" class="section">COMPONENTS</td></tr>
+      <tr><td>Click component body</td><td>Select it (yellow highlight)</td></tr>
+      <tr><td>Ctrl+Click</td><td>Add / remove from multi-selection</td></tr>
+      <tr><td>Arrow keys</td><td>Move selected component(s) by step amount</td></tr>
+      <tr><td>R</td><td>Rotate selected component(s) 90° CW</td></tr>
+      <tr><td>Drag component body</td><td>Move it; attached wire ends follow</td></tr>
+      <tr><td colspan="2" class="section">VIEW</td></tr>
+      <tr><td>Scroll wheel</td><td>Zoom in / out</td></tr>
+      <tr><td>Middle-mouse or Alt+drag</td><td>Pan</td></tr>
+      <tr><td>Double-click empty space</td><td>Reset view</td></tr>
+    </table>
+    <button id="modalClose" onclick="closeHelp()">Close</button>
+  </div>
+</div>
+<div id="toolbar">
+  <h1>Fan K11 Wire Editor</h1>
+  <span id="modeLabel">Mode: Idle</span>
+  <label><input type="checkbox" id="snapToggle" checked> Snap 5</label>
+  <button onclick="clearAllWires()">Clear All Wires</button>
+  <button onclick="autoWire()" style="color:#ffdd44;border-color:#ffdd44">Auto-wire</button>
+  <button id="labelBtn" onclick="toggleLabelMode()">Net Label</button>
+  <button onclick="resetView()">Reset View</button>
+  <label>Step: <select id="arrowStep" style="background:#0a1a0a;color:#ffdd44;border:1px solid #1e3a1e;font-family:inherit;font-size:10px;padding:2px 4px;border-radius:3px">
+    <option value="1" selected>1px</option>
+    <option value="2">2px</option>
+    <option value="5">5px</option>
+    <option value="10">10px</option>
+    <option value="20">20px</option>
+  </select></label>
+  <button onclick="openHelp()" style="margin-left:auto;color:#00ff41;border-color:#00ff41">? Help</button>
+</div>
+<div id="main">
+  <div id="canvasWrap">
+    <canvas id="c"></canvas>
+    <div id="status">0, 0</div>
+  </div>
+  <div id="sidebar">
+    <div class="sb-section">
+      <h2>HOW TO USE</h2>
+      <div id="helpBox">
+        <b style="color:#44aaff">Start wire:</b> click any terminal dot<br>
+        <b style="color:#44aaff">Add waypoint:</b> click empty space<br>
+        <b style="color:#44aaff">Finish wire:</b> click terminal or dbl-click<br>
+        <b style="color:#44aaff">Cancel:</b> Esc<br>
+        <b style="color:#ffdd44">Select wire:</b> click near it<br>
+        <b style="color:#ffdd44">Add bend:</b> click on selected wire<br>
+        <b style="color:#ffdd44">Move bend:</b> drag the cyan □ handle<br>
+        <b style="color:#ffdd44">Delete bend:</b> right-click cyan □<br>
+        <b style="color:#ff6b00">Delete wire:</b> select → Delete key<br>
+        <b style="color:#888">Pan:</b> middle-mouse or Alt+drag<br>
+        <b style="color:#888">Zoom:</b> scroll wheel
+      </div>
+    </div>
+    <div class="sb-section">
+      <h2>WIRES</h2>
+      <div id="wireList"></div>
+    </div>
+    <div class="sb-section">
+      <h2>SELECTED WIRE POINTS</h2>
+      <div id="ptEditor">—</div>
+    </div>
+    <div class="sb-section">
+      <h2>LAYOUT</h2>
+      <button onclick="exportLayout()" style="width:100%;color:#ffdd44;border-color:#ffdd44">Export layout.json</button>
+      <button onclick="importLayout()" style="width:100%;margin-top:4px">Import layout.json</button>
+      <div id="layoutStatus" style="font-size:10px;color:#aaa;margin-top:3px"></div>
+    </div>
+    <div class="sb-section">
+      <h2>WIRES → draw.js</h2>
+      <textarea id="exportBox" readonly></textarea>
+      <button onclick="copyCode()" style="width:100%;margin-top:4px">Copy to clipboard</button>
+      <button onclick="saveToDrawJs()" style="width:100%;margin-top:4px">Save → js/draw.js</button>
+      <div id="saveStatus" style="font-size:10px;color:#aaa;margin-top:3px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── World / canvas coordinate system ────────────────────────────────────────
+const WORLD_W = 840, WORLD_H = 560;
+let zoom = 1, panX = 0, panY = 0;
+
+function toCanvas(wx, wy) {
+  return { x: wx * zoom + panX, y: wy * zoom + panY };
+}
+function toWorld(cx, cy) {
+  return { x: (cx - panX) / zoom, y: (cy - panY) / zoom };
+}
+function snapVal(v) {
+  return snapOn ? Math.round(v / 5) * 5 : Math.round(v);
+}
+
+// ─── Canvas setup ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resizeCanvas() {
+  const wrap = document.getElementById('canvasWrap');
+  W = canvas.width = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+  if (panX === 0 && panY === 0) resetView();
+  else draw();
+}
+function resetView() {
+  const wrap = document.getElementById('canvasWrap');
+  W = canvas.width = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+  const sc = Math.min(W / WORLD_W, H / WORLD_H) * 0.95;
+  zoom = sc;
+  panX = (W - WORLD_W * zoom) / 2;
+  panY = (H - WORLD_H * zoom) / 2;
+  draw();
+}
+
+function fitToLayout() {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const expand = (x, y) => {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  };
+  for (const comp of COMPONENTS) {
+    if (comp.type === 'rect') {
+      expand(comp.x, comp.y); expand(comp.x + comp.w, comp.y + comp.h);
+    } else if (comp.cx !== undefined) {
+      const r = comp.r || 20;
+      expand(comp.cx - r, comp.cy - r); expand(comp.cx + r, comp.cy + r);
+    }
+    if (comp.terminals) comp.terminals.forEach(t => expand(t.x, t.y));
+  }
+  for (const w of wires) w.points.forEach(p => expand(p.x, p.y));
+  if (!isFinite(minX)) { resetView(); return; }
+  const pad = 40;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  const wrap = document.getElementById('canvasWrap');
+  W = canvas.width = wrap.clientWidth;
+  H = canvas.height = wrap.clientHeight;
+  zoom = Math.min(W / (maxX - minX), H / (maxY - minY)) * 0.95;
+  panX = (W - (maxX - minX) * zoom) / 2 - minX * zoom;
+  panY = (H - (maxY - minY) * zoom) / 2 - minY * zoom;
+  draw();
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ─── Component definitions ────────────────────────────────────────────────────
+const NET_COLOR = {
+  '12V':'#ff6b00','5V':'#44aaff','GND':'#33aa33','PWM':'#00ffcc',
+  'P7':'#88ccff','TIM':'#ffee44','CV':'#dd44ff',
+  'DA':'#ffdd44','DK':'#ffdd44','RLED':'#00ff41',
+  'misc':'#888'
+};
+// Nets represented by schematic symbols — no explicit wires drawn between them
+const POWER_NETS = new Set(['12V', '5V', 'GND']);
+
+const COMPONENTS = [
+  { id:'NE555', type:'rect', x:350, y:380, w:60, h:80, label:'NE555',
+    terminals:[
+      {id:'P1',label:'GND', x:350,y:388,net:'GND'},
+      {id:'P2',label:'TRIG',x:350,y:398,net:'TIM'},
+      {id:'P3',label:'OUT', x:350,y:408,net:'PWM'},
+      {id:'P4',label:'RST', x:350,y:418,net:'5V'},
+      {id:'P8',label:'Vcc', x:410,y:388,net:'5V'},
+      {id:'P7',label:'DIS', x:410,y:398,net:'P7'},
+      {id:'P6',label:'THR', x:410,y:408,net:'TIM'},
+      {id:'P5',label:'CV',  x:410,y:418,net:'CV'},
+    ]},
+  { id:'REG', type:'rect', x:655, y:283, w:50, h:34, label:'78L05',
+    terminals:[
+      {id:'Vout',label:'Vout',x:680,y:283,net:'5V'},
+      {id:'Vin', label:'Vin', x:680,y:317,net:'12V'},
+    ]},
+  { id:'R1', type:'smd', cx:610,cy:225, label:'R1',
+    terminals:[{id:'L',label:'L',x:600,y:225,net:'5V'},{id:'R',label:'R',x:620,y:225,net:'P7'}]},
+  { id:'R2', type:'smd', cx:490,cy:480, label:'R2',
+    terminals:[{id:'L',label:'L',x:480,y:480,net:'P7'},{id:'R',label:'R',x:500,y:480,net:'DK'}]},
+  { id:'R3', type:'smd', cx:610,cy:180, label:'R3',
+    terminals:[{id:'L',label:'L',x:600,y:180,net:'5V'},{id:'R',label:'R',x:620,y:180,net:'RLED'}]},
+  { id:'C1', type:'smd', cx:660,cy:225, label:'C1',
+    terminals:[{id:'L',label:'+',x:650,y:225,net:'12V'},{id:'R',label:'-',x:670,y:225,net:'GND'}]},
+  { id:'C2', type:'smd', cx:660,cy:180, label:'C2',
+    terminals:[{id:'L',label:'+',x:650,y:180,net:'5V'},{id:'R',label:'-',x:670,y:180,net:'GND'}]},
+  { id:'C3', type:'smd', cx:660,cy:390, label:'C3',
+    terminals:[{id:'L',label:'+',x:650,y:390,net:'TIM'},{id:'R',label:'-',x:670,y:390,net:'GND'}]},
+  { id:'C4', type:'smd', cx:710,cy:390, label:'C4',
+    terminals:[{id:'L',label:'+',x:700,y:390,net:'CV'},{id:'R',label:'-',x:720,y:390,net:'GND'}]},
+  { id:'D1', type:'diode', cx:490,cy:430, label:'D1',
+    terminals:[{id:'A',label:'A',x:479,y:430,net:'P7'},{id:'K',label:'K',x:499,y:430,net:'TIM'}]},
+  { id:'D2', type:'diode', cx:560,cy:430, label:'D2',
+    terminals:[{id:'A',label:'A',x:549,y:430,net:'DA'},{id:'K',label:'K',x:569,y:430,net:'DK'}]},
+  { id:'POT', type:'rect', x:482, y:292, w:36, h:36, label:'POT',
+    terminals:[
+      {id:'LW',label:'W',x:482,y:310,net:'TIM'},
+      {id:'R', label:'R',x:518,y:310,net:'DA'},
+    ]},
+  { id:'LED1', type:'circle', cx:610,cy:130, r:8, label:'LED1',
+    terminals:[{id:'A',label:'A',x:610,y:122,net:'RLED'},{id:'K',label:'K',x:610,y:138,net:'GND'}]},
+  { id:'F1', type:'rect', x:187, y:383, w:26, h:14, label:'F1',
+    terminals:[{id:'IN',label:'IN',x:187,y:390,net:'12V'},{id:'OUT',label:'OUT',x:213,y:390,net:'12V'}]},
+  { id:'SATA', type:'rect', x:40, y:85, w:76, h:26, label:'SATA',
+    terminals:[
+      {id:'12V',label:'12V',x:80,y:85,net:'12V'},
+      {id:'GND',label:'GND',x:80,y:111,net:'GND'},
+    ]},
+  { id:'BARREL', type:'circle', cx:80,cy:420, r:18, label:'BARREL',
+    terminals:[
+      {id:'12V',label:'+',x:80,y:402,net:'12V'},
+      {id:'GND',label:'−',x:80,y:438,net:'GND'},
+    ]},
+  // Fan connectors
+  { id:'FAN1', type:'fan', cx:180, cy:110, label:'F1',
+    terminals:[
+      {id:'12V', label:'12V', x:178, y:92,  net:'12V'},
+      {id:'PWM', label:'PWM', x:182, y:96,  net:'PWM'},
+      {id:'GND', label:'GND', x:180, y:128, net:'GND'},
+    ]},
+  { id:'FAN2', type:'fan', cx:230, cy:110, label:'F2',
+    terminals:[
+      {id:'12V', label:'12V', x:228, y:92,  net:'12V'},
+      {id:'PWM', label:'PWM', x:232, y:96,  net:'PWM'},
+      {id:'GND', label:'GND', x:230, y:128, net:'GND'},
+    ]},
+  { id:'FAN3', type:'fan', cx:280, cy:110, label:'F3',
+    terminals:[
+      {id:'12V', label:'12V', x:278, y:92,  net:'12V'},
+      {id:'PWM', label:'PWM', x:282, y:96,  net:'PWM'},
+      {id:'GND', label:'GND', x:280, y:128, net:'GND'},
+    ]},
+  { id:'FAN4', type:'fan', cx:330, cy:110, label:'F4',
+    terminals:[
+      {id:'12V', label:'12V', x:328, y:92,  net:'12V'},
+      {id:'PWM', label:'PWM', x:332, y:96,  net:'PWM'},
+      {id:'GND', label:'GND', x:330, y:128, net:'GND'},
+    ]},
+  { id:'FAN5', type:'fan', cx:380, cy:110, label:'F5',
+    terminals:[
+      {id:'12V', label:'12V', x:378, y:92,  net:'12V'},
+      {id:'PWM', label:'PWM', x:382, y:96,  net:'PWM'},
+      {id:'GND', label:'GND', x:380, y:128, net:'GND'},
+    ]},
+  { id:'FAN6', type:'fan', cx:430, cy:110, label:'F6',
+    terminals:[
+      {id:'12V', label:'12V', x:428, y:92,  net:'12V'},
+      {id:'PWM', label:'PWM', x:432, y:96,  net:'PWM'},
+      {id:'GND', label:'GND', x:430, y:128, net:'GND'},
+    ]},
+];
+
+// ─── Wire data ────────────────────────────────────────────────────────────────
+let wires = [];
+let nextId = 1;
+
+function makeWire(pts, color, label) {
+  return { id: nextId++, points: pts.map(([x,y])=>({x,y})), color, label: label||'' };
+}
+
+const PRELOAD = [
+  // IC555 P3 vertical stub to PWM bus
+  [[350,408],[350,80]],
+  // PWM horizontal bus spanning all fans
+  [[180,80],[430,80]],
+  // R3→LED (indicator branch)
+  [[610,174],[610,145]],
+  // R1 right pad → P7 node
+  [[620,225],[620,350]],
+  // R2 left pad → P7 node
+  [[480,480],[480,350]],
+  // P7 bus (horizontal)
+  [[410,350],[620,350]],
+  // P7 stub → IC555 Pin7
+  [[410,350],[410,398]],
+  // D2 anode → POT right leg
+  [[549,430],[549,310],[518,310]],
+  // D2 cathode → R2 right pad
+  [[569,430],[569,480],[500,480]],
+  // D1 anode → P7 bus
+  [[479,430],[479,350]],
+  // D1 cathode → IC555 Pin6 (TIM node)
+  [[499,430],[499,408],[410,408]],
+  // C4 CV bypass → IC555 Pin5
+  [[710,390],[410,390],[410,418]],
+  // Fan PWM drops
+  [[180,80],[180,96]],
+  [[230,80],[230,96]],
+  [[280,80],[280,96]],
+  [[330,80],[330,96]],
+  [[380,80],[380,96]],
+  [[430,80],[430,96]],
+];
+
+const WIRE_COLORS_PRELOAD = [
+  '#00ff41',  // P3 vertical stub
+  '#00ff41',  // PWM horizontal bus
+  '#ffdd44',  // R3→LED
+  '#ffdd44',  // R1 right→P7
+  '#ffdd44',  // R2 left→P7
+  '#ffdd44',  // P7 bus
+  '#ffdd44',  // P7 stub to Pin7
+  '#ffdd44',  // D2 anode→POT right
+  '#ffdd44',  // D2 cathode→R2 right
+  '#88ccff',  // D1 anode→P7 bus
+  '#ffee44',  // D1 cathode→Pin6 (TIM)
+  '#dd44ff',  // C4 CV→Pin5
+  // Fan PWM drops
+  '#00ff41','#00ff41','#00ff41','#00ff41','#00ff41','#00ff41',
+];
+
+function loadPreload() {
+  wires = [];
+  nextId = 1;
+  PRELOAD.forEach((pts, i) => {
+    wires.push(makeWire(pts, WIRE_COLORS_PRELOAD[i] || '#888'));
+  });
+}
+loadPreload();
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let selectedWireId = null;
+let inProgressWire = null; // {points:[{x,y}...], color:'#888'}
+let hoverTerminal = null;  // {comp, term}
+let hoverWireId = null;
+let cursor = {x:0, y:0}; // world coords
+let snapOn = true;
+let isPanning = false;
+let panStart = null;
+let isDraggingComp = null; // {comp, startMouse, startPos, attachedWireEnds}
+let mouseDownPos = null;
+
+// Wire bend / point manipulation state
+let segDrag = null; // {wire, ptIdx} — dragging a new bend point inserted mid-segment
+let ptDrag  = null; // {wire, ptIdx} — dragging an existing interior point handle
+
+// ─── Component selection ──────────────────────────────────────────────────────
+let selectedCompIds = new Set();
+let selectedWirePoint = null; // {wire, ptIdx}
+
+// ─── Net label state ──────────────────────────────────────────────────────────
+let labels = [];
+let labelNextId = 1;
+let labelMode = false;
+let selectedLabelId = null;
+let hoverLabelId = null;
+let isDraggingLabel = null; // {lbl, startMouse}
+let lastLabelText = '5V_REG'; // remember last used text for convenience
+
+document.getElementById('snapToggle').addEventListener('change', e => {
+  snapOn = e.target.checked;
+});
+
+// ─── Hit-test helpers ─────────────────────────────────────────────────────────
+function terminalAt(wx, wy, radius) {
+  if (radius === undefined) radius = 8;
+  for (const comp of COMPONENTS) {
+    if (!comp.terminals) continue;
+    for (const t of comp.terminals) {
+      const dx = t.x - wx, dy = t.y - wy;
+      if (Math.sqrt(dx*dx+dy*dy) <= radius) return {comp, term:t};
+    }
+  }
+  return null;
+}
+
+function compBodyAt(wx, wy) {
+  for (const comp of COMPONENTS) {
+    if (comp.type === 'rail') continue;
+    let hit = false;
+    // Transform test point into component's local (unrotated) space
+    let lx = wx, ly = wy;
+    const rot = comp.rot || 0;
+    if (rot !== 0) {
+      let rcx, rcy;
+      if (comp.type === 'rect') { rcx = comp.x + comp.w/2; rcy = comp.y + comp.h/2; }
+      else { rcx = comp.cx; rcy = comp.cy; }
+      const rad = -rot * Math.PI / 180;
+      const dx = wx - rcx, dy = wy - rcy;
+      lx = rcx + dx * Math.cos(rad) - dy * Math.sin(rad);
+      ly = rcy + dx * Math.sin(rad) + dy * Math.cos(rad);
+    }
+    if (comp.type === 'rect') {
+      hit = lx >= comp.x && lx <= comp.x+comp.w && ly >= comp.y && ly <= comp.y+comp.h;
+    } else if (comp.type === 'circle') {
+      const dx=wx-comp.cx, dy=wy-comp.cy;
+      hit = Math.sqrt(dx*dx+dy*dy) <= comp.r+4;
+    } else if (comp.type === 'smd') {
+      hit = lx >= comp.cx-12 && lx <= comp.cx+12 && ly >= comp.cy-7 && ly <= comp.cy+7;
+    } else if (comp.type === 'diode') {
+      hit = lx >= comp.cx-14 && lx <= comp.cx+14 && ly >= comp.cy-8 && ly <= comp.cy+8;
+    } else if (comp.type === 'fan') {
+      hit = lx >= comp.cx-10 && lx <= comp.cx+10 && ly >= comp.cy-8 && ly <= comp.cy+8;
+    }
+    if (hit) {
+      const onTerm = comp.terminals && comp.terminals.some(t => {
+        const dx=t.x-wx, dy=t.y-wy;
+        return Math.sqrt(dx*dx+dy*dy) <= 8;
+      });
+      if (!onTerm) return comp;
+    }
+  }
+  return null;
+}
+
+function wireNear(wx, wy, thresh) {
+  if (thresh === undefined) thresh = 6;
+  for (const w of wires) {
+    const pts = w.points;
+    for (let i = 0; i < pts.length-1; i++) {
+      if (segDist(pts[i].x,pts[i].y,pts[i+1].x,pts[i+1].y,wx,wy) < thresh)
+        return w;
+    }
+  }
+  return null;
+}
+
+// Find which segment of wire w is closest to (wx,wy) within thresh.
+// Returns {wire, afterIdx, projX, projY} or null.
+function wireSegNear(wx, wy, thresh, onlyWire) {
+  if (thresh === undefined) thresh = 6;
+  let best = null, bestDist = thresh;
+  const candidates = onlyWire ? [onlyWire] : wires;
+  for (const w of candidates) {
+    const pts = w.points;
+    for (let i = 0; i < pts.length-1; i++) {
+      const d = segDist(pts[i].x,pts[i].y,pts[i+1].x,pts[i+1].y,wx,wy);
+      if (d < bestDist) {
+        bestDist = d;
+        // project point onto segment for initial insert position
+        const dx=pts[i+1].x-pts[i].x, dy=pts[i+1].y-pts[i].y, len2=dx*dx+dy*dy;
+        let t = len2===0 ? 0 : ((wx-pts[i].x)*dx+(wy-pts[i].y)*dy)/len2;
+        t = Math.max(0,Math.min(1,t));
+        best = {wire:w, afterIdx:i, projX:pts[i].x+t*dx, projY:pts[i].y+t*dy};
+      }
+    }
+  }
+  return best;
+}
+
+function segDist(x1,y1,x2,y2,px,py) {
+  const dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy;
+  if(len2===0) return Math.hypot(px-x1,py-y1);
+  let t=((px-x1)*dx+(py-y1)*dy)/len2;
+  t=Math.max(0,Math.min(1,t));
+  return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
+}
+
+// Check if world point is near any interior (non-endpoint) point of a wire.
+// Returns {wire, ptIdx} or null.
+function nearWirePoint(wx, wy, wire, thresh) {
+  if (thresh === undefined) thresh = 8;
+  const pts = wire.points;
+  for (let i = 1; i < pts.length-1; i++) {
+    if (Math.hypot(pts[i].x-wx, pts[i].y-wy) <= thresh) return {wire, ptIdx:i};
+  }
+  return null;
+}
+
+// Check endpoints too (for endpoint hit test on selected wire)
+function nearWirePointAny(wx, wy, wire, thresh) {
+  if (thresh === undefined) thresh = 8;
+  const pts = wire.points;
+  for (let i = 0; i < pts.length; i++) {
+    if (Math.hypot(pts[i].x-wx, pts[i].y-wy) <= thresh) return {wire, ptIdx:i};
+  }
+  return null;
+}
+
+// ─── Net label hit-test & drawing ────────────────────────────────────────────
+function labelAt(wx, wy) {
+  for (const lbl of labels) {
+    // Approximate world-space bounding box (tip at lbl.x,lbl.y, extends right)
+    const approxW = lbl.text.length * 7 + 18;
+    if (wx >= lbl.x - 4 && wx <= lbl.x + approxW && Math.abs(wy - lbl.y) <= 9) return lbl;
+  }
+  return null;
+}
+
+function drawNetLabel(lbl) {
+  const sel = lbl.id === selectedLabelId;
+  const hov = lbl.id === hoverLabelId && !sel;
+  // Highlight all labels sharing the same text when one is selected
+  const peer = !sel && !hov && selectedLabelId !== null &&
+               labels.find(l => l.id === selectedLabelId)?.text === lbl.text;
+
+  const baseColor = NET_COLOR[lbl.text] || '#ffaa33';
+  const color = sel ? '#00ff41' : peer ? '#ffee88' : hov ? '#ffcc55' : baseColor;
+
+  const p = toCanvas(lbl.x, lbl.y);
+  ctx.save();
+  ctx.font = `bold ${Math.max(7, zoom * 8)}px Share Tech Mono,monospace`;
+  const tw = ctx.measureText(lbl.text).width;
+  const padX = Math.max(3, zoom * 4);
+  const h = Math.max(8, zoom * 11);
+  const tip = Math.max(4, zoom * 6);
+  const bx = p.x + tip, bw = tw + padX * 2;
+
+  // Flag shape: tip at p, body extends right
+  ctx.fillStyle = sel ? '#1a2a00' : '#0a1200';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1, zoom * 1.2);
+  ctx.shadowColor = color; ctx.shadowBlur = sel ? 10 : peer ? 6 : 4;
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(bx, p.y - h / 2);
+  ctx.lineTo(bx + bw, p.y - h / 2);
+  ctx.lineTo(bx + bw, p.y + h / 2);
+  ctx.lineTo(bx, p.y + h / 2);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(lbl.text, bx + padX, p.y);
+  ctx.restore();
+}
+
+function toggleLabelMode() {
+  labelMode = !labelMode;
+  document.getElementById('labelBtn').classList.toggle('active-tool', labelMode);
+  if (labelMode) {
+    inProgressWire = null; segDrag = null; ptDrag = null;
+    selectedWireId = null;
+    setMode('Net Label: click to place — click label to select — drag to move — Delete to remove');
+  } else {
+    setMode('Click a terminal dot to start a wire');
+  }
+  draw();
+}
+
+// ─── Power / GND symbols ──────────────────────────────────────────────────────
+function drawPowerSymbol(t) {
+  const color = NET_COLOR[t.net] || '#888';
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = Math.max(1, zoom * 1.2);
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 3;
+
+  if (t.net === 'GND') {
+    // Vertical stub down, then 3 decreasing horizontal bars
+    const stub = 5, barY0 = 3, barGap = 3;
+    const bars = [8, 5, 3];
+    const top = toCanvas(t.x, t.y);
+    const bot = toCanvas(t.x, t.y + stub);
+    ctx.beginPath(); ctx.moveTo(top.x, top.y); ctx.lineTo(bot.x, bot.y); ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      const by = t.y + stub + barY0 + i * barGap;
+      const hw = bars[i] / 2;
+      const a = toCanvas(t.x - hw, by), b = toCanvas(t.x + hw, by);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    if (zoom > 0.55) {
+      ctx.shadowBlur = 0;
+      ctx.font = `${Math.max(5, zoom * 6)}px Share Tech Mono,monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      const lp = toCanvas(t.x, t.y + stub + barY0 + 3 * barGap + 1);
+      ctx.fillText('GND', lp.x, lp.y);
+    }
+  } else {
+    // Power flag: short vertical stub up + net label
+    const stub = 9;
+    const top = toCanvas(t.x, t.y), tip = toCanvas(t.x, t.y - stub);
+    ctx.beginPath(); ctx.moveTo(top.x, top.y); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+    if (zoom > 0.5) {
+      ctx.shadowBlur = 0;
+      ctx.font = `bold ${Math.max(5, zoom * 6.5)}px Share Tech Mono,monospace`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ctx.fillText(t.net === '12V' ? '+12V' : '+5V', tip.x, tip.y);
+    }
+  }
+  ctx.restore();
+}
+
+// ─── Drawing ──────────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0,0,W,H);
+
+  // background
+  ctx.fillStyle='#0a0a0a';
+  ctx.fillRect(0,0,W,H);
+
+  // world border
+  const tl=toCanvas(0,0), br=toCanvas(WORLD_W,WORLD_H);
+  ctx.strokeStyle='#1a2a1a';
+  ctx.lineWidth=1;
+  ctx.strokeRect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+
+  // grid
+  const step = 10;
+  ctx.strokeStyle='#111a11';
+  ctx.lineWidth=0.5;
+  const gx0 = Math.floor((0-panX)/zoom/step)*step;
+  const gx1 = Math.ceil((W-panX)/zoom/step)*step;
+  const gy0 = Math.floor((0-panY)/zoom/step)*step;
+  const gy1 = Math.ceil((H-panY)/zoom/step)*step;
+  ctx.beginPath();
+  for(let gx=gx0;gx<=gx1;gx+=step){ const ccx=toCanvas(gx,0).x; ctx.moveTo(ccx,0);ctx.lineTo(ccx,H); }
+  for(let gy=gy0;gy<=gy1;gy+=step){ const ccy=toCanvas(0,gy).y; ctx.moveTo(0,ccy);ctx.lineTo(W,ccy); }
+  ctx.stroke();
+
+  // rails
+  for(const comp of COMPONENTS){
+    if(comp.type!=='rail') continue;
+    const c=NET_COLOR[comp.net]||'#888';
+    ctx.save();
+    ctx.strokeStyle=c;
+    ctx.lineWidth=Math.max(1,zoom*2);
+    ctx.shadowColor=c; ctx.shadowBlur=6;
+    const a=toCanvas(comp.x1,comp.y1), b=toCanvas(comp.x2,comp.y2);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.restore();
+    const mid=toCanvas((comp.x1+comp.x2)/2,(comp.y1+comp.y2)/2);
+    ctx.fillStyle=c; ctx.font=`${Math.max(8,zoom*9)}px Share Tech Mono,monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(comp.label, mid.x, mid.y - zoom*8);
+  }
+
+  // wires
+  for(const w of wires){
+    const sel=(w.id===selectedWireId);
+    const hov=(w.id===hoverWireId && !sel);
+    ctx.save();
+    ctx.strokeStyle = sel ? '#ffffff' : hov ? '#aaffcc' : w.color;
+    ctx.lineWidth = Math.max(1, zoom*(sel?2.5:1.8));
+    if(sel||hov){ ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=8; }
+    ctx.beginPath();
+    const pts=w.points;
+    if(pts.length>0){
+      const s=toCanvas(pts[0].x,pts[0].y);
+      ctx.moveTo(s.x,s.y);
+      for(let i=1;i<pts.length;i++){ const p=toCanvas(pts[i].x,pts[i].y); ctx.lineTo(p.x,p.y); }
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw point handles on selected wire
+    if(sel && pts.length >= 2){
+      // Endpoints: filled circles
+      [0, pts.length-1].forEach(idx => {
+        const p = toCanvas(pts[idx].x, pts[idx].y);
+        ctx.save();
+        ctx.fillStyle = '#00ff41';
+        ctx.shadowColor = '#00ff41'; ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(3, zoom*4), 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      });
+      // Interior waypoints: hollow squares
+      for(let i=1; i<pts.length-1; i++){
+        const p = toCanvas(pts[i].x, pts[i].y);
+        const hs = Math.max(3, zoom*3); // half-size of the square
+        ctx.save();
+        ctx.strokeStyle = '#00ffcc';
+        ctx.lineWidth = Math.max(1, zoom*1.2);
+        ctx.shadowColor = '#00ffcc'; ctx.shadowBlur = 5;
+        ctx.fillStyle = '#0a0a0a';
+        ctx.beginPath();
+        ctx.rect(p.x - hs, p.y - hs, hs*2, hs*2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+      // Highlight selected wire point
+      if (selectedWirePoint && selectedWirePoint.wire === w) {
+        const sp = toCanvas(pts[selectedWirePoint.ptIdx].x, pts[selectedWirePoint.ptIdx].y);
+        ctx.save();
+        ctx.strokeStyle = '#ffdd44';
+        ctx.lineWidth = Math.max(1.5, zoom * 2);
+        ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, Math.max(5, zoom * 7), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  // in-progress wire
+  if(inProgressWire){
+    ctx.save();
+    ctx.strokeStyle=inProgressWire.color||'#00ff41';
+    ctx.lineWidth=Math.max(1,zoom*1.8);
+    ctx.setLineDash([4*zoom,4*zoom]);
+    ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=8;
+    ctx.beginPath();
+    const pts=inProgressWire.points;
+    const s=toCanvas(pts[0].x,pts[0].y);
+    ctx.moveTo(s.x,s.y);
+    for(let i=1;i<pts.length;i++){ const p=toCanvas(pts[i].x,pts[i].y); ctx.lineTo(p.x,p.y); }
+    // rubber band to cursor
+    const csnap = snapOn ? {x:snapVal(cursor.x),y:snapVal(cursor.y)} : cursor;
+    const cc=toCanvas(csnap.x, csnap.y);
+    ctx.lineTo(cc.x,cc.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // components
+  for(const comp of COMPONENTS){
+    if(comp.type==='rail') continue;
+    drawComp(comp);
+  }
+
+  // terminal dots
+  for(const comp of COMPONENTS){
+    if(!comp.terminals) continue;
+    for(const t of comp.terminals){
+      const isHov = hoverTerminal && hoverTerminal.comp===comp && hoverTerminal.term===t;
+      const c = NET_COLOR[t.net]||NET_COLOR.misc;
+      const p = toCanvas(t.x,t.y);
+      ctx.save();
+      ctx.fillStyle = isHov ? '#fff' : c;
+      ctx.shadowColor = c; ctx.shadowBlur = isHov ? 12 : 6;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y, isHov ? zoom*7 : zoom*5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+      if(zoom > 0.7){
+        ctx.fillStyle='#ccc';
+        ctx.font=`${Math.max(6,zoom*7)}px Share Tech Mono,monospace`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(t.label, p.x, p.y - zoom*9);
+      }
+    }
+  }
+
+  // Power / GND symbols at matching terminals
+  for(const comp of COMPONENTS){
+    if(!comp.terminals) continue;
+    for(const t of comp.terminals){
+      if(POWER_NETS.has(t.net)) drawPowerSymbol(t);
+    }
+  }
+
+  // Net labels
+  for (const lbl of labels) drawNetLabel(lbl);
+
+  // Snap ring — shown when drawing a wire and cursor is near a terminal
+  if(inProgressWire && hoverTerminal){
+    const t = hoverTerminal.term;
+    const p = toCanvas(t.x, t.y);
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = Math.max(1.5, zoom*1.5);
+    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 16;
+    ctx.setLineDash([4*zoom, 3*zoom]);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(10, zoom*14), 0, Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(8, zoom*9)}px Share Tech Mono,monospace`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(`⊙ SNAP: ${t.label} (${t.net})`, p.x, p.y - Math.max(12, zoom*16));
+  }
+}
+
+function drawComp(comp) {
+  ctx.save();
+  const isDragged = isDraggingComp && isDraggingComp.comp === comp;
+  const isSel = selectedCompIds.has(comp.id);
+  ctx.strokeStyle = isDragged ? '#00ff41' : isSel ? '#ffdd44' : '#2a4a2a';
+  ctx.lineWidth = Math.max(1, zoom*(isSel?1.8:1.2));
+  ctx.fillStyle = '#0e1a0e';
+  if (isSel) { ctx.shadowColor = '#ffdd44'; ctx.shadowBlur = 12; }
+
+  // Apply rotation transform around component center
+  const rot = comp.rot || 0;
+  if (rot !== 0) {
+    let rcx, rcy;
+    if (comp.type === 'rect') { rcx = comp.x + comp.w/2; rcy = comp.y + comp.h/2; }
+    else { rcx = comp.cx; rcy = comp.cy; }
+    const rcp = toCanvas(rcx, rcy);
+    ctx.translate(rcp.x, rcp.y);
+    ctx.rotate(rot * Math.PI / 180);
+    ctx.translate(-rcp.x, -rcp.y);
+  }
+
+  if(comp.type==='rect'||comp.type==='smd'||comp.type==='diode'){
+    let bx,by,bw,bh;
+    if(comp.type==='rect'){ bx=comp.x; by=comp.y; bw=comp.w; bh=comp.h; }
+    else if(comp.type==='smd'){ bx=comp.cx-10;by=comp.cy-5;bw=20;bh=10; }
+    else { bx=comp.cx-12;by=comp.cy-6;bw=24;bh=12; }
+    const tl=toCanvas(bx,by),br=toCanvas(bx+bw,by+bh);
+    ctx.beginPath();
+    ctx.rect(tl.x,tl.y,br.x-tl.x,br.y-tl.y);
+    ctx.fill(); ctx.stroke();
+    const mid=toCanvas(bx+bw/2,by+bh/2);
+    ctx.fillStyle='#44cc66';
+    ctx.font=`${Math.max(6,zoom*8)}px Share Tech Mono,monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(comp.label, mid.x, mid.y);
+  } else if(comp.type==='circle'){
+    const p=toCanvas(comp.cx,comp.cy);
+    const r=comp.r*zoom;
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#44cc66';
+    ctx.font=`${Math.max(6,zoom*7)}px Share Tech Mono,monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(comp.label,p.x,p.y);
+  } else if(comp.type==='fan'){
+    // Small rounded-rect body 20×16
+    const bx=comp.cx-10, by=comp.cy-8, bw=20, bh=16;
+    const tl=toCanvas(bx,by), br2=toCanvas(bx+bw,by+bh);
+    const rr = Math.max(1, zoom*2);
+    ctx.beginPath();
+    ctx.moveTo(tl.x+rr, tl.y);
+    ctx.lineTo(br2.x-rr, tl.y);
+    ctx.arcTo(br2.x, tl.y, br2.x, tl.y+rr, rr);
+    ctx.lineTo(br2.x, br2.y-rr);
+    ctx.arcTo(br2.x, br2.y, br2.x-rr, br2.y, rr);
+    ctx.lineTo(tl.x+rr, br2.y);
+    ctx.arcTo(tl.x, br2.y, tl.x, br2.y-rr, rr);
+    ctx.lineTo(tl.x, tl.y+rr);
+    ctx.arcTo(tl.x, tl.y, tl.x+rr, tl.y, rr);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    // ⊕ symbol inside
+    const cx2=toCanvas(comp.cx,comp.cy);
+    const sr = Math.max(2, zoom*4);
+    ctx.strokeStyle = '#44cc66';
+    ctx.lineWidth = Math.max(0.5, zoom*0.8);
+    // circle
+    ctx.beginPath(); ctx.arc(cx2.x,cx2.y,sr,0,Math.PI*2); ctx.stroke();
+    // crosshair
+    ctx.beginPath();
+    ctx.moveTo(cx2.x-sr,cx2.y); ctx.lineTo(cx2.x+sr,cx2.y);
+    ctx.moveTo(cx2.x,cx2.y-sr); ctx.lineTo(cx2.x,cx2.y+sr);
+    ctx.stroke();
+
+    // label below
+    ctx.fillStyle='#44cc66';
+    ctx.font=`${Math.max(5,zoom*7)}px Share Tech Mono,monospace`;
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillText(comp.label, cx2.x, br2.y+zoom*2);
+  }
+  ctx.restore();
+}
+
+// ─── Update sidebar ───────────────────────────────────────────────────────────
+function updateSidebar() {
+  const list = document.getElementById('wireList');
+  list.innerHTML = '';
+  wires.forEach(w => {
+    const div = document.createElement('div');
+    div.className = 'witem' + (w.id===selectedWireId?' sel':'');
+    div.innerHTML = `<span class="wdot" style="background:${w.color}"></span><span class="wlbl">W${w.id} (${w.points.length}pts)</span>`;
+    div.addEventListener('click',()=>{ selectedWireId=w.id; updateSidebar(); draw(); });
+    list.appendChild(div);
+  });
+
+  const sel = wires.find(w=>w.id===selectedWireId);
+  document.getElementById('ptEditor').textContent = sel
+    ? sel.points.map((p,i)=>`${i}:(${p.x},${p.y})`).join('  ')
+    : '—';
+
+  // export
+  let exp = '';
+  wires.forEach(w => {
+    const pts = w.points;
+    for(let i=0;i<pts.length-1;i++){
+      exp += `sw(${pts[i].x},${pts[i].y},${pts[i+1].x},${pts[i+1].y},'${w.color}');\n`;
+    }
+  });
+  document.getElementById('exportBox').value = exp;
+}
+
+function clearAllWires() {
+  if(!confirm('Clear all wires?')) return;
+  wires=[]; nextId=1; selectedWireId=null; inProgressWire=null;
+  segDrag=null; ptDrag=null;
+  updateSidebar(); draw();
+}
+
+// ─── Auto-wire ────────────────────────────────────────────────────────────────
+function autoWire() {
+  if(wires.length > 0 && !confirm('Replace all wires with auto-routed connections?')) return;
+  wires=[]; nextId=1; selectedWireId=null; inProgressWire=null;
+  segDrag=null; ptDrag=null;
+
+  // Rail components (type='rail') indexed by net — these are horizontal trunk lines
+  const railByNet = {};
+  for(const comp of COMPONENTS){
+    if(comp.type==='rail') railByNet[comp.net] = comp;
+  }
+
+  // Group all terminals by net, skip 'misc'
+  const netMap = {};
+  for(const comp of COMPONENTS){
+    if(!comp.terminals) continue;
+    for(const t of comp.terminals){
+      if(t.net==='misc') continue;
+      (netMap[t.net] = netMap[t.net] || []).push(t);
+    }
+  }
+
+  for(const [net, terms] of Object.entries(netMap)){
+    if(terms.length < 2) continue;
+    if(POWER_NETS.has(net)) continue;  // shown as symbols, not wires
+    const color = NET_COLOR[net] || '#888';
+    const rail = railByNet[net];
+
+    if(rail){
+      // Rail net: drop a vertical stub from each terminal to the rail line
+      const ry = rail.y1;
+      for(const t of terms){
+        if(t.y !== ry) wires.push(makeWire([[t.x, t.y], [t.x, ry]], color));
+      }
+    } else {
+      // Non-rail net: Prim's MST on Manhattan distance, route each edge as an L-shape
+      const n = terms.length;
+      const inMST   = new Array(n).fill(false);
+      const minDist = new Array(n).fill(Infinity);
+      const parent  = new Array(n).fill(-1);
+      minDist[0] = 0;
+
+      for(let iter = 0; iter < n; iter++){
+        let u = -1;
+        for(let i = 0; i < n; i++){
+          if(!inMST[i] && (u===-1 || minDist[i] < minDist[u])) u = i;
+        }
+        inMST[u] = true;
+        for(let v = 0; v < n; v++){
+          if(inMST[v]) continue;
+          const d = Math.abs(terms[u].x - terms[v].x) + Math.abs(terms[u].y - terms[v].y);
+          if(d < minDist[v]){ minDist[v] = d; parent[v] = u; }
+        }
+      }
+
+      for(let v = 1; v < n; v++){
+        const a = terms[parent[v]], b = terms[v];
+        if(a.x === b.x || a.y === b.y){
+          wires.push(makeWire([[a.x, a.y], [b.x, b.y]], color));
+        } else {
+          // Horizontal-first L-shape
+          wires.push(makeWire([[a.x, a.y], [b.x, a.y], [b.x, b.y]], color));
+        }
+      }
+    }
+  }
+
+  updateSidebar(); draw();
+  setMode('Auto-wire complete — drag components or bend wires to adjust');
+}
+
+// ─── Interaction ──────────────────────────────────────────────────────────────
+function setMode(s){ document.getElementById('modeLabel').textContent='Mode: '+s; }
+
+// Helper: get canvas coords from mouse event
+function evCanvas(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (canvas.width/rect.width),
+    y: (e.clientY - rect.top)  * (canvas.height/rect.height)
+  };
+}
+
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  const cc = evCanvas(e);
+  const w  = toWorld(cc.x, cc.y);
+  // Right-click label → delete it
+  const lhit = labelAt(w.x, w.y);
+  if (lhit) {
+    labels = labels.filter(l => l.id !== lhit.id);
+    if (selectedLabelId === lhit.id) selectedLabelId = null;
+    updateSidebar(); draw(); return;
+  }
+  // Check all wires for an interior point near the right-click
+  for(const wire of wires){
+    const hit = nearWirePoint(w.x, w.y, wire, 12/zoom);
+    if(hit){
+      wire.points.splice(hit.ptIdx, 1);
+      selectedWireId = wire.id;
+      updateSidebar(); draw();
+      return;
+    }
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const cc = evCanvas(e);
+  const w  = toWorld(cc.x, cc.y);
+
+  if(isPanning && panStart){
+    panX += cc.x - panStart.x;
+    panY += cc.y - panStart.y;
+    panStart = {x:cc.x, y:cc.y};
+    draw(); return;
+  }
+
+  // ── segDrag: moving a newly-inserted bend point ──────────────────────────
+  if(segDrag){
+    const sx = snapVal(w.x), sy = snapVal(w.y);
+    segDrag.wire.points[segDrag.ptIdx].x = sx;
+    segDrag.wire.points[segDrag.ptIdx].y = sy;
+    updateSidebar(); draw(); return;
+  }
+
+  // ── ptDrag: moving an existing interior point ────────────────────────────
+  if(ptDrag){
+    const sx = snapVal(w.x), sy = snapVal(w.y);
+    ptDrag.wire.points[ptDrag.ptIdx].x = sx;
+    ptDrag.wire.points[ptDrag.ptIdx].y = sy;
+    updateSidebar(); draw(); return;
+  }
+
+  if (isDraggingLabel) {
+    isDraggingLabel.lbl.x = snapVal(w.x - isDraggingLabel.offX);
+    isDraggingLabel.lbl.y = snapVal(w.y - isDraggingLabel.offY);
+    draw(); return;
+  }
+
+  if(isDraggingComp){
+    const dx = w.x - isDraggingComp.startMouse.x;
+    const dy = w.y - isDraggingComp.startMouse.y;
+    moveComp(isDraggingComp, dx, dy);
+    draw(); return;
+  }
+
+  cursor = w;
+  document.getElementById('status').textContent =
+    `world (${Math.round(w.x)}, ${Math.round(w.y)})` +
+    (snapOn ? `  snap (${snapVal(w.x)}, ${snapVal(w.y)})` : '');
+
+  hoverTerminal = terminalAt(w.x, w.y, 12/zoom);
+  hoverLabelId = labelAt(w.x, w.y)?.id ?? null;
+  if(!inProgressWire) {
+    const hw = !hoverTerminal ? wireNear(w.x,w.y,12/zoom) : null;
+    hoverWireId = hw ? hw.id : null;
+  }
+
+  // Cursor feedback
+  if(inProgressWire)        canvas.style.cursor = hoverTerminal ? 'cell' : 'crosshair';
+  else if(isPanning)        canvas.style.cursor = 'grabbing';
+  else if(hoverTerminal)    canvas.style.cursor = 'crosshair';
+  else if(hoverWireId)      canvas.style.cursor = 'pointer';
+  else                      canvas.style.cursor = 'default';
+
+  // ── Start segDrag when dragging on a wire segment (before comp drag) ──────
+  if(!inProgressWire && mouseDownPos && e.buttons===1 && !isPanning && !isDraggingComp && !segDrag && !ptDrag){
+    const dist = Math.hypot(cc.x - mouseDownPos.x, cc.y - mouseDownPos.y);
+    if(dist > 4){
+      // Check if mousedown was on any point (including endpoints) of any wire
+      let ptHit = null;
+      // Prefer selected wire, then fall back to any wire
+      const selWire = wires.find(w2=>w2.id===selectedWireId);
+      if(selWire) ptHit = nearWirePointAny(mouseDownPos.wx, mouseDownPos.wy, selWire, 10/zoom);
+      if(!ptHit){
+        for(const w2 of wires){
+          ptHit = nearWirePointAny(mouseDownPos.wx, mouseDownPos.wy, w2, 10/zoom);
+          if(ptHit) break;
+        }
+      }
+      if(ptHit){
+        ptDrag = ptHit;
+        selectedWireId = ptHit.wire.id;
+        mouseDownPos = null;
+        setMode('Moving point… release near a terminal to snap');
+        updateSidebar(); draw(); return;
+      }
+
+      // Check if mousedown was on a wire segment → insert bend
+      const segHit = wireSegNear(mouseDownPos.wx, mouseDownPos.wy, 6/zoom);
+      if(segHit && !inProgressWire){
+        const insertX = snapVal(segHit.projX), insertY = snapVal(segHit.projY);
+        const pts = segHit.wire.points;
+        pts.splice(segHit.afterIdx + 1, 0, {x:insertX, y:insertY});
+        segDrag = {wire: segHit.wire, ptIdx: segHit.afterIdx + 1};
+        selectedWireId = segHit.wire.id;
+        mouseDownPos = null;
+        setMode('Bending…');
+        updateSidebar(); draw(); return;
+      }
+    }
+  }
+
+  draw();
+});
+
+// Second mousemove listener for comp-drag initiation (capture phase, as original)
+canvas.addEventListener('mousemove', e => {
+  if(!isDraggingComp && !segDrag && !ptDrag && mouseDownPos && e.buttons===1 && !isPanning){
+    const cc = evCanvas(e);
+    const dist = Math.hypot(cc.x - mouseDownPos.x, cc.y - mouseDownPos.y);
+    if(dist > 6){
+      const comp = compBodyAt(mouseDownPos.wx, mouseDownPos.wy);
+      if(comp && comp.type!=='rail'){
+        const origTerms = comp.terminals ? comp.terminals.map(t=>({...t})) : [];
+        const attached=[];
+        for(const wire of wires){
+          for(let pi=0;pi<wire.points.length;pi++){
+            for(const ot of origTerms){
+              if(Math.abs(wire.points[pi].x-ot.x)<1 && Math.abs(wire.points[pi].y-ot.y)<1){
+                attached.push({wire, pi, termId:ot.id, origX:ot.x, origY:ot.y});
+              }
+            }
+          }
+        }
+        isDraggingComp={comp, startMouse:toWorld(mouseDownPos.x,mouseDownPos.y), origTerms, attached, cumDx:0, cumDy:0};
+      }
+    }
+  }
+}, true);
+
+canvas.addEventListener('mousedown', e => {
+  if(e.button===1 || (e.button===0 && e.altKey)){
+    isPanning=true;
+    const cc=evCanvas(e);
+    panStart={x:cc.x, y:cc.y};
+    e.preventDefault(); return;
+  }
+  if(e.button===0){
+    const cc=evCanvas(e);
+    const w=toWorld(cc.x,cc.y);
+    // Start dragging a label if we clicked one
+    const lhit = labelAt(w.x, w.y);
+    if (lhit) {
+      selectedLabelId = lhit.id; selectedWireId = null;
+      isDraggingLabel = {lbl: lhit, offX: w.x - lhit.x, offY: w.y - lhit.y};
+      updateSidebar(); draw(); return;
+    }
+    mouseDownPos={x:cc.x,y:cc.y,wx:w.x,wy:w.y};
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if(isPanning){ isPanning=false; panStart=null; return; }
+  if(isDraggingLabel){ isDraggingLabel=null; updateSidebar(); draw(); return; }
+
+  // Finalize segDrag
+  if(segDrag){
+    // Snap final position to terminal if close enough
+    const p = segDrag.wire.points[segDrag.ptIdx];
+    const ht = terminalAt(p.x, p.y, 10/zoom);
+    if(ht){ p.x=ht.term.x; p.y=ht.term.y; }
+    segDrag=null;
+    setMode('Click a terminal dot to start a wire');
+    updateSidebar(); draw(); return;
+  }
+
+  // Finalize ptDrag
+  if(ptDrag){
+    const p = ptDrag.wire.points[ptDrag.ptIdx];
+    const ht = terminalAt(p.x, p.y, 16/zoom);
+    if(ht){ p.x=ht.term.x; p.y=ht.term.y; }
+    ptDrag=null;
+    setMode('Click a terminal dot to start a wire');
+    updateSidebar(); draw(); return;
+  }
+
+  if(isDraggingComp){
+    isDraggingComp.startPos = null;
+    isDraggingComp = null;
+    updateSidebar(); draw(); return;
+  }
+
+  if(e.button===0 && mouseDownPos){
+    const cc=evCanvas(e);
+    const dist=Math.hypot(cc.x-mouseDownPos.x,cc.y-mouseDownPos.y);
+    if(dist < 5){
+      handleClick(mouseDownPos.wx, mouseDownPos.wy, e.ctrlKey);
+    }
+    mouseDownPos=null;
+  }
+});
+
+function moveComp(drag, dx, dy) {
+  const comp=drag.comp;
+  const sdx=snapOn?Math.round(dx/5)*5:dx;
+  const sdy=snapOn?Math.round(dy/5)*5:dy;
+  const ddx=sdx-drag.cumDx, ddy=sdy-drag.cumDy;
+  if(ddx===0&&ddy===0) return;
+  drag.cumDx=sdx; drag.cumDy=sdy;
+
+  if(comp.type==='rect'){ comp.x+=ddx; comp.y+=ddy; }
+  else if(comp.type==='circle'||comp.type==='smd'||comp.type==='diode'||comp.type==='fan'){ comp.cx+=ddx; comp.cy+=ddy; }
+
+  if(comp.terminals) comp.terminals.forEach(t=>{ t.x+=ddx; t.y+=ddy; });
+  drag.attached.forEach(a=>{ a.wire.points[a.pi].x+=ddx; a.wire.points[a.pi].y+=ddy; });
+}
+
+function nudgeComp(comp, dx, dy) {
+  if (comp.type === 'rect') { comp.x += dx; comp.y += dy; }
+  else { comp.cx += dx; comp.cy += dy; }
+  if (comp.terminals) comp.terminals.forEach(t => {
+    const ox = t.x, oy = t.y;
+    t.x += dx; t.y += dy;
+    for (const wire of wires)
+      for (let pi = 0; pi < wire.points.length; pi++) {
+        const pt = wire.points[pi];
+        if (Math.abs(pt.x - ox) < 1 && Math.abs(pt.y - oy) < 1) { pt.x = t.x; pt.y = t.y; }
+      }
+  });
+}
+
+function rotateComp(comp) {
+  let cx, cy;
+  if (comp.type === 'rect') { cx = comp.x + comp.w/2; cy = comp.y + comp.h/2; }
+  else { cx = comp.cx; cy = comp.cy; }
+
+  if (!comp.terminals) { comp.rot = ((comp.rot||0)+90)%360; return; }
+
+  comp.terminals.forEach(t => {
+    const oldX = t.x, oldY = t.y;
+    const px = t.x - cx, py = t.y - cy;
+    t.x = Math.round(cx - py);
+    t.y = Math.round(cy + px);
+    // Move any wire endpoints that were snapped to this terminal
+    for (const wire of wires) {
+      for (let pi = 0; pi < wire.points.length; pi++) {
+        const pt = wire.points[pi];
+        if (Math.abs(pt.x - oldX) < 2 && Math.abs(pt.y - oldY) < 2) {
+          pt.x = t.x; pt.y = t.y;
+        }
+      }
+    }
+  });
+  comp.rot = ((comp.rot||0)+90)%360;
+}
+
+function handleClick(wx, wy, ctrlKey) {
+  const sx=snapVal(wx), sy=snapVal(wy);
+
+  // ── Label mode ──────────────────────────────────────────────────────────────
+  if (labelMode) {
+    const lhit = labelAt(wx, wy);
+    if (lhit) {
+      // Click existing label: select it (drag was handled in mousedown)
+      selectedLabelId = lhit.id; updateSidebar(); draw();
+    } else {
+      // Place a new label — prompt with last-used text pre-filled
+      const text = prompt('Net label name:', lastLabelText);
+      if (text && text.trim()) {
+        lastLabelText = text.trim();
+        labels.push({id: labelNextId++, x: sx, y: sy, text: lastLabelText});
+        updateSidebar(); draw();
+      }
+    }
+    return;
+  }
+
+  // Clicking a label in normal mode selects it (and deselects wire)
+  const lhit = labelAt(wx, wy);
+  if (lhit) {
+    selectedLabelId = lhit.id; selectedWireId = null;
+    updateSidebar(); draw(); return;
+  }
+  selectedLabelId = null;
+
+  if(inProgressWire){
+    const ht=terminalAt(wx,wy,10/zoom);
+    if(ht){
+      inProgressWire.points.push({x:ht.term.x, y:ht.term.y});
+      finishWire();
+    } else {
+      inProgressWire.points.push({x:sx,y:sy});
+    }
+    draw(); return;
+  }
+
+  // Click on selected wire → select a point, or insert bend at click point
+  const selWire = wires.find(w=>w.id===selectedWireId);
+  if(selWire){
+    const ptHit = nearWirePointAny(wx, wy, selWire, 10/zoom);
+    if(ptHit){
+      selectedWirePoint = { wire: selWire, ptIdx: ptHit.ptIdx };
+      setMode(`Point ${ptHit.ptIdx} selected — arrow keys to nudge`);
+      draw(); return;
+    }
+    const segHit = wireSegNear(wx, wy, 12/zoom, selWire);
+    if(segHit){
+      const bx = snapVal(wx), by = snapVal(wy);
+      selWire.points.splice(segHit.afterIdx + 1, 0, {x:bx, y:by});
+      updateSidebar(); draw(); return;
+    }
+  }
+
+  // Click on component body (not on terminal) → select / multi-select
+  const hitComp = compBodyAt(wx, wy);
+  if (hitComp) {
+    if (ctrlKey) {
+      if (selectedCompIds.has(hitComp.id)) selectedCompIds.delete(hitComp.id);
+      else selectedCompIds.add(hitComp.id);
+    } else {
+      selectedCompIds.clear();
+      selectedCompIds.add(hitComp.id);
+    }
+    selectedWireId = null; selectedLabelId = null; selectedWirePoint = null;
+    const n = selectedCompIds.size;
+    setMode(n > 1
+      ? `${n} selected — arrow keys to move, R to rotate each`
+      : `Selected: ${hitComp.id} — press R to rotate 90° CW`);
+    updateSidebar(); draw(); return;
+  }
+
+  const ht=terminalAt(wx,wy,12/zoom);
+  if(ht){
+    inProgressWire={points:[{x:ht.term.x,y:ht.term.y}], color:'#888'};
+    const nc=NET_COLOR[ht.term.net];
+    if(nc) inProgressWire.color=nc;
+    setMode('Drawing… — click to add waypoint, click terminal or dbl-click to finish, Esc to cancel');
+    draw(); return;
+  }
+
+  const hw=wireNear(wx,wy,12/zoom);
+  if(hw){ selectedWireId=hw.id; selectedWirePoint=null; updateSidebar(); draw(); return; }
+
+  selectedWireId=null; selectedCompIds.clear(); selectedWirePoint=null; updateSidebar(); draw();
+}
+
+canvas.addEventListener('dblclick', e => {
+  if(inProgressWire && inProgressWire.points.length >= 2){
+    finishWire();
+    draw(); return;
+  }
+  resetView();
+});
+
+function finishWire() {
+  if(inProgressWire && inProgressWire.points.length >= 2){
+    wires.push({id:nextId++, points:inProgressWire.points, color:inProgressWire.color, label:''});
+    selectedWireId=wires[wires.length-1].id;
+  }
+  inProgressWire=null;
+  setMode('Click a terminal dot to start a wire');
+  updateSidebar(); draw();
+}
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const cc=evCanvas(e);
+  const factor=e.deltaY<0?1.12:1/1.12;
+  panX=cc.x-(cc.x-panX)*factor;
+  panY=cc.y-(cc.y-panY)*factor;
+  zoom*=factor;
+  zoom=Math.max(0.1,Math.min(20,zoom));
+  draw();
+},{passive:false});
+
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape'){
+    if(labelMode){ toggleLabelMode(); }
+    else if(inProgressWire){ inProgressWire=null; setMode('Click a terminal dot to start a wire'); draw(); }
+    else if(segDrag){ segDrag=null; setMode('Click a terminal dot to start a wire'); draw(); }
+    else if(ptDrag){ ptDrag=null; setMode('Click a terminal dot to start a wire'); draw(); }
+    else { selectedWireId=null; selectedLabelId=null; selectedCompIds.clear(); selectedWirePoint=null; updateSidebar(); draw(); }
+  }
+  if((e.key==='r'||e.key==='R') && !e.target.matches('input,textarea,select')){
+    if(selectedCompIds.size > 0){
+      for(const id of selectedCompIds){
+        const comp=COMPONENTS.find(c=>c.id===id);
+        if(comp) rotateComp(comp);
+      }
+      updateSidebar(); draw();
+      e.preventDefault();
+    }
+  }
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key) && !e.target.matches('input,textarea,select')){
+    const step = parseInt(document.getElementById('arrowStep').value) || 1;
+    const dx = e.key==='ArrowLeft' ? -step : e.key==='ArrowRight' ? step : 0;
+    const dy = e.key==='ArrowUp'   ? -step : e.key==='ArrowDown'  ? step : 0;
+    if(selectedWirePoint){
+      e.preventDefault();
+      const pt = selectedWirePoint.wire.points[selectedWirePoint.ptIdx];
+      pt.x += dx; pt.y += dy;
+      updateSidebar(); draw();
+    } else if(selectedCompIds.size > 0){
+      e.preventDefault();
+      for(const id of selectedCompIds){
+        const comp=COMPONENTS.find(c=>c.id===id);
+        if(comp) nudgeComp(comp, dx, dy);
+      }
+      updateSidebar(); draw();
+    }
+  }
+  if((e.key==='Delete'||e.key==='Backspace') && !e.target.matches('input,textarea')){
+    if(selectedLabelId){
+      labels=labels.filter(l=>l.id!==selectedLabelId);
+      selectedLabelId=null; updateSidebar(); draw();
+    } else if(selectedWireId){
+      wires=wires.filter(w=>w.id!==selectedWireId);
+      selectedWireId=null; updateSidebar(); draw();
+    }
+    e.preventDefault();
+  }
+});
+
+// ─── Save / export ────────────────────────────────────────────────────────────
+function buildWireCode() {
+  let out = '';
+  wires.forEach(w => {
+    const pts = w.points;
+    for (let i = 0; i < pts.length - 1; i++) {
+      out += `  sw(${pts[i].x},${pts[i].y},${pts[i+1].x},${pts[i+1].y},'${w.color}');\n`;
+    }
+  });
+  if (labels.length > 0) {
+    out += `\n  // NET LABELS\n`;
+    labels.forEach(l => {
+      out += `  // label(${l.x},${l.y},'${l.text}')\n`;
+    });
+  }
+  return out;
+}
+
+function copyCode() {
+  const code = document.getElementById('exportBox').value;
+  navigator.clipboard.writeText(code).then(() => {
+    document.getElementById('saveStatus').textContent = '✓ Copied to clipboard';
+    setTimeout(() => document.getElementById('saveStatus').textContent = '', 2000);
+  });
+}
+
+async function saveToDrawJs() {
+  const status = document.getElementById('saveStatus');
+  if (!window.showOpenFilePicker) {
+    status.textContent = 'File System API not supported — use Copy instead.';
+    return;
+  }
+  try {
+    const [fh] = await window.showOpenFilePicker({
+      types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }],
+      suggestedName: 'draw.js'
+    });
+    const file = await fh.getFile();
+    let src = await file.text();
+
+    const START = '// ── WIRES START ──';
+    const END   = '// ── WIRES END ──';
+    const si = src.indexOf(START);
+    const ei = src.indexOf(END);
+    if (si === -1 || ei === -1) {
+      status.textContent = '✗ Markers not found in draw.js';
+      return;
+    }
+    const before = src.slice(0, si + START.length);
+    const after  = src.slice(ei);
+    const newCode = buildWireCode();
+    src = before + ' (editor.html regenerates everything between these markers)\n' + newCode + '  ' + after;
+
+    const writable = await fh.createWritable();
+    await writable.write(src);
+    await writable.close();
+    status.textContent = '✓ Saved to draw.js';
+    setTimeout(() => status.textContent = '', 3000);
+  } catch (err) {
+    if (err.name !== 'AbortError') status.textContent = '✗ ' + err.message;
+  }
+}
+
+// ─── Layout export / import ───────────────────────────────────────────────────
+function exportLayout() {
+  const data = {
+    components: COMPONENTS.map(c => {
+      const entry = { id: c.id, type: c.type, rot: c.rot || 0 };
+      if (c.type === 'rect')         { entry.x = c.x;   entry.y = c.y; }
+      else                           { entry.cx = c.cx; entry.cy = c.cy; }
+      if (c.terminals) entry.terminals = c.terminals.map(t => ({ id: t.id, x: t.x, y: t.y }));
+      return entry;
+    }),
+    wires: wires.map(w => ({ points: w.points.map(p => [p.x, p.y]), color: w.color })),
+    labels: labels.map(l => ({ x: l.x, y: l.y, text: l.text }))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'layout.json'; a.click();
+  URL.revokeObjectURL(url);
+  const st = document.getElementById('layoutStatus');
+  st.textContent = '✓ Downloaded layout.json';
+  setTimeout(() => st.textContent = '', 2500);
+}
+
+function importLayout() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      applyLayout(data);
+      const st = document.getElementById('layoutStatus');
+      st.textContent = '✓ Layout loaded';
+      setTimeout(() => st.textContent = '', 2500);
+    } catch (err) {
+      document.getElementById('layoutStatus').textContent = '✗ ' + err.message;
+    }
+  };
+  input.click();
+}
+
+function applyLayout(data) {
+  // Restore component positions and terminal coordinates
+  for (const entry of (data.components || [])) {
+    const comp = COMPONENTS.find(c => c.id === entry.id);
+    if (!comp) continue;
+    comp.rot = entry.rot || 0;
+    if (comp.type === 'rect') { comp.x = entry.x; comp.y = entry.y; }
+    else                      { comp.cx = entry.cx; comp.cy = entry.cy; }
+    if (entry.terminals && comp.terminals) {
+      for (const et of entry.terminals) {
+        const t = comp.terminals.find(t2 => t2.id === et.id);
+        if (t) { t.x = et.x; t.y = et.y; }
+      }
+    }
+  }
+  // Restore wires
+  wires = []; nextId = 1;
+  for (const w of (data.wires || [])) wires.push(makeWire(w.points, w.color));
+  // Restore labels
+  labels = []; labelNextId = 1;
+  for (const l of (data.labels || [])) labels.push({ id: labelNextId++, x: l.x, y: l.y, text: l.text });
+
+  selectedWireId = null; selectedCompIds.clear(); selectedLabelId = null;
+  updateSidebar(); fitToLayout();
+}
+
+// ─── Help modal ───────────────────────────────────────────────────────────────
+function openHelp()  { document.getElementById('modal').classList.add('open'); }
+function closeHelp() { document.getElementById('modal').classList.remove('open'); }
+document.addEventListener('keydown', e => { if(e.key==='F1'){ e.preventDefault(); openHelp(); } });
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+resizeCanvas();
+updateSidebar();
+setMode('Click a terminal dot to start a wire');
+
+// Auto-load layout.json if present next to the editor
+fetch('./layout.json')
+  .then(r => { if (!r.ok) throw new Error('not found'); return r.json(); })
+  .then(data => {
+    applyLayout(data);
+    setMode('Loaded layout.json — click a terminal dot to start a wire');
+  })
+  .catch(() => { /* no layout.json — stay on defaults */ });
+</script>
+</body>
+</html>

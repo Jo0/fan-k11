@@ -20,19 +20,21 @@ let simTick  = 0;                // incremented each draw frame, used for fan an
 let noiseOff = 0;                // phase offset for the noisy PWM simulation
 
 // ── Resize handler ────────────────────────────────────────────────────────────
+function fitSimToLayout() {
+  const bw = simBounds.maxX - simBounds.minX;
+  const bh = simBounds.maxY - simBounds.minY;
+  simScale = Math.min(simW / bw, simH / bh) * 0.92;
+  simOX = simW / 2 - (simBounds.minX + simBounds.maxX) / 2 * simScale;
+  simOY = simH / 2 - (simBounds.minY + simBounds.maxY) / 2 * simScale;
+}
+
 function resizeSim() {
   const sidebar  = document.querySelector('.sim-sidebar');
   const sidebarW = sidebar ? sidebar.offsetWidth : 240;
   simW = simCanvas.width  = simWrap.clientWidth - sidebarW;
   simH = simCanvas.height = simWrap.clientHeight || 560;
 
-  // Uniform scale — fit 840×560 virtual world into canvas without distortion
-  const scaleX = simW / 840;
-  const scaleY = simH / 560;
-  simScale = Math.min(scaleX, scaleY);
-  // Centre the schematic if canvas is wider or taller than the 840:560 ratio
-  simOX = (simW - 840 * simScale) / 2;
-  simOY = (simH - 560 * simScale) / 2;
+  fitSimToLayout();
 
   const pwWrap = pwmCanvas.parentElement;
   pwmCanvas.width  = pwWrap.clientWidth  - 10;
@@ -206,9 +208,6 @@ function updateSimSidebar() {
   fb.className = 'fault-banner ' + sevMap[f.sev];
   fb.innerHTML = f.desc;
 
-  // Disable pot slider when fault makes it irrelevant
-  document.getElementById('potRange').disabled =
-    f.fanMode !== 'pot' && f.fanMode !== 'halfrange' && f.fanMode !== 'erratic';
 }
 
 // ── Public control functions (called from index.html inline handlers) ─────────
@@ -290,6 +289,35 @@ window.addEventListener('mouseup', () => {
 
 simCanvas.style.cursor = 'grab';
 
+// ── Component hover ───────────────────────────────────────────────────────────
+let hoverSimComp = null;
+
+function simCanvasToWorld(cx, cy) {
+  return {
+    x: ((cx - vpPanX) / vpZoom - simOX) / simScale,
+    y: ((cy - vpPanY) / vpZoom - simOY) / simScale,
+  };
+}
+
+simCanvas.addEventListener('mousemove', e => {
+  if (_dragActive) return;
+  const rect = simCanvas.getBoundingClientRect();
+  const cx = (e.clientX - rect.left) * (simCanvas.width  / rect.width);
+  const cy = (e.clientY - rect.top)  * (simCanvas.height / rect.height);
+  const w  = simCanvasToWorld(cx, cy);
+  let found = null;
+  for (const [id, pos] of Object.entries(simPos)) {
+    const bh = _BODY_HALF[id];
+    if (!bh) continue;
+    if (Math.abs(w.x - pos.x) <= bh[0] && Math.abs(w.y - pos.y) <= bh[1]) {
+      found = id; break;
+    }
+  }
+  hoverSimComp = found;
+});
+
+simCanvas.addEventListener('mouseleave', () => { hoverSimComp = null; });
+
 // ── Animation loop ────────────────────────────────────────────────────────────
 let simVisible = true;
 
@@ -305,6 +333,17 @@ function simLoop() {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
+fetch('./layout.json')
+  .then(r => r.json())
+  .then(data => {
+    applySimLayout(data);
+    vpZoom = 1; vpPanX = 0; vpPanY = 0;
+    fitSimToLayout();
+    if (typeof drawAllMinis === 'function') drawAllMinis();
+  })
+  .catch(() => {});
+document.getElementById('faultSel').value = 'ok';
+faultKey = 'ok';
 updateSimSidebar();
 drawPWM();
 simLoop();

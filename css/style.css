@@ -198,7 +198,7 @@ section {
   margin-bottom: 2rem;
 }
 .section-intro {
-  font-size: 0.8rem;
+  font-size: 1.0rem;
   color: var(--text-dim);
   line-height: 1.9;
   max-width: 52rem;
@@ -242,7 +242,7 @@ section {
 }
 .net-card-sub { font-size: 0.58rem; color: var(--dim); letter-spacing: 1px; margin-top: 0.15rem; }
 .net-card-body { padding: 1.1rem 1.25rem; }
-.net-card-body p { font-size: 0.75rem; color: var(--text-dim); line-height: 1.8; margin-bottom: 0.75rem; }
+.net-card-body p { font-size: 0.9rem; color: var(--text); line-height: 1.8; margin-bottom: 0.75rem; }
 .net-card-body p:last-child { margin-bottom: 0; }
 
 .comp-pills {
@@ -254,9 +254,9 @@ section {
   border-top: 1px solid var(--border);
 }
 .pill {
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   letter-spacing: 1px;
-  padding: 0.2rem 0.5rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 0.2rem;
   border: 1px solid;
 }
@@ -287,7 +287,7 @@ section {
 
 .fault-group-title {
   font-family: 'Orbitron', monospace;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   letter-spacing: 3px;
   color: var(--label);
   margin-bottom: 1rem;
@@ -297,23 +297,23 @@ section {
 .fault-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.72rem;
+  font-size: 0.9rem;
 }
 .fault-table th {
   text-align: left;
-  font-size: 0.58rem;
+  font-size: 0.7rem;
   letter-spacing: 2px;
   color: var(--dim);
-  padding: 0 0.65rem 0.5rem 0;
+  padding: 0 0.75rem 0.6rem 0;
   border-bottom: 1px solid var(--border);
 }
 .fault-table td {
-  padding: 0.5rem 0.65rem 0.5rem 0;
+  padding: 0.6rem 0.75rem 0.6rem 0;
   border-bottom: 1px solid rgba(26,58,26,0.5);
   vertical-align: top;
-  color: var(--text-dim);
-  font-size: 0.72rem;
-  line-height: 1.5;
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.6;
 }
 .fault-table tr:last-child td { border-bottom: none; }
 .fault-comp { color: var(--orange); font-weight: bold; }
@@ -322,8 +322,8 @@ section {
 .fault-comp.yellow { color: var(--yellow); }
 .fault-sev {
   display: inline-block;
-  font-size: 0.55rem;
-  padding: 0.15rem 0.4rem;
+  font-size: 0.68rem;
+  padding: 0.2rem 0.5rem;
   border-radius: 0.15rem;
   letter-spacing: 1px;
   white-space: nowrap;
@@ -431,8 +431,8 @@ section {
   background: #030a03;
   border: 1px solid var(--border);
   border-radius: 0.2rem;
-  padding: 0.25rem;
-  height: 3.25rem;
+  padding: 1rem 0.25rem 0.25rem;
+  height: 4.5rem;
   position: relative;
   margin-top: 0.5rem;
 }
@@ -485,6 +485,64 @@ footer {
 }
 footer a { color: var(--trace-dim); text-decoration: none; }
 footer a:hover { color: var(--trace); }
+
+/* ── Overview section ── */
+.overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 48px; }
+.overview-text  { font-size: 16px; color: var(--text); line-height: 1.9; margin-bottom: 14px; }
+
+.signal-path { display: flex; flex-direction: column; gap: 8px; }
+.signal-row  { display: flex; align-items: center; gap: 12px; }
+.signal-lbl  { width: 80px; text-align: right; font-size: 10px; color: var(--sig-c, var(--text)); }
+.signal-line { flex: 1; height: 1px; background: var(--sig-c, var(--border)); box-shadow: 0 0 4px var(--sig-c, transparent); }
+.signal-dst  { font-size: 10px; color: var(--sig-c, var(--text)); }
+.sig-orange  { --sig-c: var(--orange); }
+.sig-blue    { --sig-c: var(--blue); }
+.sig-green   { --sig-c: var(--trace); }
+.sig-yellow  { --sig-c: var(--yellow); }
+
+.count-wrap  { margin-top: 28px; }
+.count-grid  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.count-card  { text-align: center; padding: 8px; border: 1px solid var(--border); border-radius: 4px; }
+.count-val   { font-family: 'Orbitron', monospace; font-size: 18px; }
+.count-label { font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+
+/* ── Net icon color variants ── */
+.ni-orange { background: rgba(255,107,0,0.1);  border: 1px solid rgba(255,107,0,0.3); }
+.ni-blue   { background: rgba(68,170,255,0.1); border: 1px solid rgba(68,170,255,0.3); }
+.ni-green  { background: rgba(0,255,65,0.08);  border: 1px solid rgba(0,255,65,0.25); }
+
+/* ── Volt fill color variants ── */
+.vf-orange { background: #ff6b00; box-shadow: 0 0 4px #ff6b00; }
+.vf-blue   { background: #44aaff; box-shadow: 0 0 4px #44aaff; }
+.vf-green  { background: #00ff41; box-shadow: 0 0 4px #00ff41; }
+
+/* ── Sim sidebar ── */
+.sim-pane--grow { flex: 1; }
+
+/* ── Symptom quick reference ── */
+.symptom-grid  { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 48px; }
+.symptom-card  { padding: 14px 16px; border-radius: 4px; }
+.sc-red    { border: 1px solid rgba(255,68,68,0.3);  background: rgba(255,0,0,0.04);    --sc-c: #ff6666; }
+.sc-orange { border: 1px solid rgba(255,107,0,0.3);  background: rgba(255,107,0,0.04);  --sc-c: var(--orange); }
+.sc-yellow { border: 1px solid rgba(255,221,68,0.3); background: rgba(255,221,68,0.04); --sc-c: var(--yellow); }
+.sc-green  { border: 1px solid rgba(0,255,65,0.2);   background: rgba(0,255,65,0.03);   --sc-c: var(--trace); }
+.symptom-label { font-size: 14px; letter-spacing: 2px; color: var(--sc-c); margin-bottom: 6px; }
+.symptom-text  { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+.symptom-check { font-size: 16px; color: var(--sc-c); }
+
+/* ── Measurement guide ── */
+.meas-grid  { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.meas-card  { padding: 12px 14px; border: 1px solid var(--border); border-radius: 4px; }
+.mc-orange { border-left: 3px solid var(--orange); --mc-c: var(--orange); }
+.mc-blue   { border-left: 3px solid var(--blue);   --mc-c: var(--blue); }
+.mc-green  { border-left: 3px solid var(--trace);  --mc-c: var(--trace); }
+.mc-yellow { border-left: 3px solid var(--yellow); --mc-c: var(--yellow); }
+.meas-label { font-size: 12px; letter-spacing: 2px; color: var(--mc-c); margin-bottom: 4px; }
+.meas-val   { font-family: 'Orbitron', monospace; font-size: 22px; color: var(--mc-c); }
+.meas-note  { font-size: 14px; color: var(--text); margin-top: 4px; }
+
+/* ── Footer ── */
+.footer-sub { margin-top: 8px; font-size: 9px; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {

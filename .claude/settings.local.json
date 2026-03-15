@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"D:/Sandbox/fan-k11\" -name \"README*\" -o -name \"readme*\" 2>/dev/null | head -5)"
+    ]
+  }
+}

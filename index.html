@@ -42,7 +42,7 @@
       </div>
       <div class="hero-board">
         <div class="board-img-wrap">
-          <canvas id="boardThumb" width="480" height="320" style="width:100%;display:block;"></canvas>
+          <img src="assets/CloseUpPic.jpg" alt="FAN-K11 PCB — top view, component side">
         </div>
         <div class="board-caption">PCB — TOP VIEW · COMPONENT SIDE</div>
       </div>
@@ -62,19 +62,19 @@
       There are no microcontrollers, no firmware, and no digital logic — just passive components and two ICs working together.
     </p>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:48px;">
+    <div class="overview-grid">
       <div>
         <div class="fault-group-title">HOW IT WORKS</div>
-        <p style="font-size:12px;color:var(--text-dim);line-height:1.9;margin-bottom:14px;">
+        <p class="overview-text">
           12V enters through either the SATA connector or the barrel jack — both feed the same fused rail.
           The 78L05 linear regulator steps 12V down to a stable 5V rail which powers the NE555 and the power indicator LED.
         </p>
-        <p style="font-size:12px;color:var(--text-dim);line-height:1.9;margin-bottom:14px;">
+        <p class="overview-text">
           The NE555 runs in astable mode, continuously oscillating and generating a square wave on its Pin 3 output.
           The frequency is set by R1, R2, and C3, while the duty cycle — the ratio of on-time to off-time — is controlled
           by the potentiometer through a diode steering network (D1, D2).
         </p>
-        <p style="font-size:12px;color:var(--text-dim);line-height:1.9;">
+        <p class="overview-text">
           The PWM signal from Pin 3 drives all six fan headers simultaneously. Since 4-pin PWM fans regulate their own
           internal motor speed in response to the PWM duty cycle on Pin 4, the board needs only to provide the signal —
           the fans themselves do the speed control.
@@ -82,57 +82,57 @@
       </div>
       <div>
         <div class="fault-group-title">SIGNAL PATH</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:80px;text-align:right;font-size:10px;color:var(--orange);">12V IN</div>
-            <div style="flex:1;height:1px;background:var(--orange);box-shadow:0 0 4px var(--orange);"></div>
-            <div style="font-size:10px;color:var(--orange);">SATA / BARREL</div>
+        <div class="signal-path">
+          <div class="signal-row sig-orange">
+            <div class="signal-lbl">12V IN</div>
+            <div class="signal-line"></div>
+            <div class="signal-dst">SATA / BARREL</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:80px;text-align:right;font-size:10px;color:var(--orange);">FUSED</div>
-            <div style="flex:1;height:1px;background:var(--orange);box-shadow:0 0 4px var(--orange);"></div>
-            <div style="font-size:10px;color:var(--orange);">F1 — 5A</div>
+          <div class="signal-row sig-orange">
+            <div class="signal-lbl">FUSED</div>
+            <div class="signal-line"></div>
+            <div class="signal-dst">F1 — 5A</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:80px;text-align:right;font-size:10px;color:var(--blue);">REGULATED</div>
-            <div style="flex:1;height:1px;background:var(--blue);box-shadow:0 0 4px var(--blue);"></div>
-            <div style="font-size:10px;color:var(--blue);">78L05 → 5V</div>
+          <div class="signal-row sig-blue">
+            <div class="signal-lbl">REGULATED</div>
+            <div class="signal-line"></div>
+            <div class="signal-dst">78L05 → 5V</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:80px;text-align:right;font-size:10px;color:var(--trace);">OSCILLATING</div>
-            <div style="flex:1;height:1px;background:var(--trace);box-shadow:0 0 4px var(--trace);"></div>
-            <div style="font-size:10px;color:var(--trace);">NE555 ASTABLE</div>
+          <div class="signal-row sig-green">
+            <div class="signal-lbl">OSCILLATING</div>
+            <div class="signal-line"></div>
+            <div class="signal-dst">NE555 ASTABLE</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:80px;text-align:right;font-size:10px;color:var(--yellow);">DUTY CTRL</div>
-            <div style="flex:1;height:1px;background:var(--yellow);box-shadow:0 0 4px var(--yellow);"></div>
-            <div style="font-size:10px;color:var(--yellow);">POT + D1 + D2</div>
+          <div class="signal-row sig-yellow">
+            <div class="signal-lbl">DUTY CTRL</div>
+            <div class="signal-line"></div>
+            <div class="signal-dst">POT + D1 + D2</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:80px;text-align:right;font-size:10px;color:var(--trace);">PWM OUT</div>
-            <div style="flex:1;height:1px;background:var(--trace);box-shadow:0 0 4px var(--trace);"></div>
-            <div style="font-size:10px;color:var(--trace);">PIN 3 → 6× FANS</div>
+          <div class="signal-row sig-green">
+            <div class="signal-lbl">PWM OUT</div>
+            <div class="signal-line"></div>
+            <div class="signal-dst">PIN 3 → 6× FANS</div>
           </div>
         </div>
 
-        <div style="margin-top:28px;">
+        <div class="count-wrap">
           <div class="fault-group-title">COMPONENT COUNT</div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
-              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--blue);">2</div>
-              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">ICs</div>
+          <div class="count-grid">
+            <div class="count-card">
+              <div class="count-val" style="color:var(--blue)">2</div>
+              <div class="count-label">ICs</div>
             </div>
-            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
-              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--trace);">9</div>
-              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">PASSIVES</div>
+            <div class="count-card">
+              <div class="count-val" style="color:var(--trace)">9</div>
+              <div class="count-label">PASSIVES</div>
             </div>
-            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
-              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--yellow);">2</div>
-              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">DIODES</div>
+            <div class="count-card">
+              <div class="count-val" style="color:var(--yellow)">2</div>
+              <div class="count-label">DIODES</div>
             </div>
-            <div style="text-align:center;padding:8px;border:1px solid var(--border);border-radius:4px;">
-              <div style="font-family:'Orbitron',monospace;font-size:18px;color:var(--orange);">6</div>
-              <div style="font-size:8px;color:var(--dim);letter-spacing:1px;">FAN PORTS</div>
+            <div class="count-card">
+              <div class="count-val" style="color:var(--orange)">6</div>
+              <div class="count-label">FAN PORTS</div>
             </div>
           </div>
         </div>
@@ -192,22 +192,22 @@
       <div class="sim-sidebar">
         <div class="sim-pane">
           <div class="sim-pane-title">⚡ POWER RAILS</div>
-          <div class="volt-row"><div class="volt-label"><span>12V Rail</span><span id="sv12">12.0V</span></div><div class="volt-bar"><div class="volt-fill" id="sf12" style="width:100%;background:#ff6b00;box-shadow:0 0 4px #ff6b00"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>5V Rail</span><span id="sv5">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>12V Rail</span><span id="sv12">12.0V</span></div><div class="volt-bar"><div class="volt-fill vf-orange" id="sf12" style="width:100%"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>5V Rail</span><span id="sv5">4.97V</span></div><div class="volt-bar"><div class="volt-fill vf-blue" id="sf5" style="width:41%"></div></div></div>
         </div>
         <div class="sim-pane">
           <div class="sim-pane-title">📊 NE555 NODES</div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 8 Vcc</span><span id="sv8">4.97V</span></div><div class="volt-bar"><div class="volt-fill" id="sf8" style="width:41%;background:#44aaff;box-shadow:0 0 4px #44aaff"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 2/6</span><span id="sv26">~2.5V osc</span></div><div class="volt-bar"><div class="volt-fill" id="sf26" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 3 Out</span><span id="sv3">~2.5V avg</span></div><div class="volt-bar"><div class="volt-fill" id="sf3" style="width:50%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
-          <div class="volt-row"><div class="volt-label"><span>Pin 5 CV</span><span id="sv5cv">3.31V</span></div><div class="volt-bar"><div class="volt-fill" id="sf5cv" style="width:27%;background:#00ff41;box-shadow:0 0 4px #00ff41"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 8 Vcc</span><span id="sv8">4.97V</span></div><div class="volt-bar"><div class="volt-fill vf-blue" id="sf8" style="width:41%"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 2/6</span><span id="sv26">~2.5V osc</span></div><div class="volt-bar"><div class="volt-fill vf-green" id="sf26" style="width:50%"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 3 Out</span><span id="sv3">~2.5V avg</span></div><div class="volt-bar"><div class="volt-fill vf-green" id="sf3" style="width:50%"></div></div></div>
+          <div class="volt-row"><div class="volt-label"><span>Pin 5 CV</span><span id="sv5cv">3.31V</span></div><div class="volt-bar"><div class="volt-fill vf-green" id="sf5cv" style="width:27%"></div></div></div>
           <div class="pwm-canvas-wrap"><span>PIN 3 PWM</span><canvas id="pwmCanvas"></canvas></div>
         </div>
         <div class="sim-pane">
           <div class="sim-pane-title">💨 FAN OUTPUTS</div>
           <div class="fan-grid" id="fanGrid"></div>
         </div>
-        <div class="sim-pane" style="flex:1">
+        <div class="sim-pane sim-pane--grow">
           <div class="sim-pane-title">🔧 DIAGNOSIS</div>
           <div class="fault-banner fb-ok" id="faultBanner">
             ✓ All systems nominal<br>PWM ~22kHz oscillating<br>Pot controls fan speed
@@ -233,7 +233,7 @@
       <!-- Power Input -->
       <div class="net-card">
         <div class="net-card-header">
-          <div class="net-icon" style="background:rgba(255,107,0,0.1);border:1px solid rgba(255,107,0,0.3);">⚡</div>
+          <div class="net-icon ni-orange">⚡</div>
           <div>
             <div class="net-card-title">POWER INPUT</div>
             <div class="net-card-sub">12V SUPPLY · FUSE PROTECTION</div>
@@ -259,7 +259,7 @@
       <!-- Regulation -->
       <div class="net-card">
         <div class="net-card-header">
-          <div class="net-icon" style="background:rgba(68,170,255,0.1);border:1px solid rgba(68,170,255,0.3);">⬇</div>
+          <div class="net-icon ni-blue">⬇</div>
           <div>
             <div class="net-card-title">VOLTAGE REGULATION</div>
             <div class="net-card-sub">78L05 · 5V RAIL · DECOUPLING</div>
@@ -282,7 +282,7 @@
       <!-- Power Indicator -->
       <div class="net-card">
         <div class="net-card-header">
-          <div class="net-icon" style="background:rgba(0,255,65,0.08);border:1px solid rgba(0,255,65,0.25);">◉</div>
+          <div class="net-icon ni-green">◉</div>
           <div>
             <div class="net-card-title">POWER INDICATOR</div>
             <div class="net-card-sub">R3 · LED1 · GND</div>
@@ -304,9 +304,9 @@
       </div>
 
       <!-- PWM Oscillator -->
-      <div class="net-card" style="grid-column: span 1;">
+      <div class="net-card">
         <div class="net-card-header">
-          <div class="net-icon" style="background:rgba(0,255,65,0.08);border:1px solid rgba(0,255,65,0.25);">〜</div>
+          <div class="net-icon ni-green">〜</div>
           <div>
             <div class="net-card-title">PWM OSCILLATOR</div>
             <div class="net-card-sub">NE555 · TIMING NETWORK · POT · DIODES</div>
@@ -340,7 +340,7 @@
       <!-- Fan Output -->
       <div class="net-card">
         <div class="net-card-header">
-          <div class="net-icon" style="background:rgba(0,255,65,0.08);border:1px solid rgba(0,255,65,0.25);">💨</div>
+          <div class="net-icon ni-green">💨</div>
           <div>
             <div class="net-card-title">FAN OUTPUT</div>
             <div class="net-card-sub">6× 4-PIN PWM HEADERS</div>
@@ -378,42 +378,42 @@
     </p>
 
     <!-- Symptom quick-ref -->
-    <div class="fault-group-title" style="margin-bottom:20px;">SYMPTOM QUICK REFERENCE</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:48px;">
-      <div style="padding:14px 16px;border:1px solid rgba(255,68,68,0.3);border-radius:4px;background:rgba(255,0,0,0.04);">
-        <div style="font-size:9px;letter-spacing:2px;color:#ff6666;margin-bottom:6px;">SYMPTOM</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Board completely dead — no LED, no fans</div>
-        <div style="font-size:10px;color:var(--orange);">→ Check: F1 (blown fuse) or C1 (shorted)</div>
+    <div class="fault-group-title">SYMPTOM QUICK REFERENCE</div>
+    <div class="symptom-grid">
+      <div class="symptom-card sc-red">
+        <div class="symptom-label">SYMPTOM</div>
+        <div class="symptom-text">Board completely dead — no LED, no fans</div>
+        <div class="symptom-check">→ Check: F1 (blown fuse) or C1 (shorted)</div>
       </div>
-      <div style="padding:14px 16px;border:1px solid rgba(255,107,0,0.3);border-radius:4px;background:rgba(255,107,0,0.04);">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--orange);margin-bottom:6px;">SYMPTOM</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED off, fans run at full speed</div>
-        <div style="font-size:10px;color:var(--orange);">→ Check: 78L05 dead or C2 shorted (5V rail gone)</div>
+      <div class="symptom-card sc-orange">
+        <div class="symptom-label">SYMPTOM</div>
+        <div class="symptom-text">LED off, fans run at full speed</div>
+        <div class="symptom-check">→ Check: 78L05 dead or C2 shorted (5V rail gone)</div>
       </div>
-      <div style="padding:14px 16px;border:1px solid rgba(255,107,0,0.3);border-radius:4px;background:rgba(255,107,0,0.04);">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--orange);margin-bottom:6px;">SYMPTOM</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED on, fans full speed, pot does nothing</div>
-        <div style="font-size:10px;color:var(--orange);">→ Check: C3 open (primary fault on this unit), NE555 dead</div>
+      <div class="symptom-card sc-orange">
+        <div class="symptom-label">SYMPTOM</div>
+        <div class="symptom-text">LED on, fans full speed, pot does nothing</div>
+        <div class="symptom-check">→ Check: C3 open (primary fault on this unit), NE555 dead</div>
       </div>
-      <div style="padding:14px 16px;border:1px solid rgba(255,107,0,0.3);border-radius:4px;background:rgba(255,107,0,0.04);">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--orange);margin-bottom:6px;">SYMPTOM</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED on, fans stopped, pot does nothing</div>
-        <div style="font-size:10px;color:var(--orange);">→ Check: C3 shorted, R1 open, or Pin 4 pulled low</div>
+      <div class="symptom-card sc-orange">
+        <div class="symptom-label">SYMPTOM</div>
+        <div class="symptom-text">LED on, fans stopped, pot does nothing</div>
+        <div class="symptom-check">→ Check: C3 shorted, R1 open, or Pin 4 pulled low</div>
       </div>
-      <div style="padding:14px 16px;border:1px solid rgba(255,221,68,0.3);border-radius:4px;background:rgba(255,221,68,0.04);">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--yellow);margin-bottom:6px;">SYMPTOM</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Pot has reduced range — can't reach min or max</div>
-        <div style="font-size:10px;color:var(--yellow);">→ Check: D1 or D2 leaky/open — diode test both</div>
+      <div class="symptom-card sc-yellow">
+        <div class="symptom-label">SYMPTOM</div>
+        <div class="symptom-text">Pot has reduced range — can't reach min or max</div>
+        <div class="symptom-check">→ Check: D1 or D2 leaky/open — diode test both</div>
       </div>
-      <div style="padding:14px 16px;border:1px solid rgba(255,221,68,0.3);border-radius:4px;background:rgba(255,221,68,0.04);">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--yellow);margin-bottom:6px;">SYMPTOM</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Fan speed hunts / fluctuates randomly</div>
-        <div style="font-size:10px;color:var(--yellow);">→ Check: C2 open (noisy 5V rail), or C4 open (noisy CV pin)</div>
+      <div class="symptom-card sc-yellow">
+        <div class="symptom-label">SYMPTOM</div>
+        <div class="symptom-text">Fan speed hunts / fluctuates randomly</div>
+        <div class="symptom-check">→ Check: C2 open (noisy 5V rail), or C4 open (noisy CV pin)</div>
       </div>
-      <div style="padding:14px 16px;border:1px solid rgba(0,255,65,0.2);border-radius:4px;background:rgba(0,255,65,0.03);">
-        <div style="font-size:9px;letter-spacing:2px;color:var(--trace);margin-bottom:6px;">SYMPTOM</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">LED dark, everything else works normally</div>
-        <div style="font-size:10px;color:var(--trace);">→ Check: R3 open or LED1 dead — purely cosmetic</div>
+      <div class="symptom-card sc-green">
+        <div class="symptom-label">SYMPTOM</div>
+        <div class="symptom-text">LED dark, everything else works normally</div>
+        <div class="symptom-check">→ Check: R3 open or LED1 dead — purely cosmetic</div>
       </div>
     </div>
 
@@ -563,36 +563,36 @@
 
     <!-- Measurement guide -->
     <div class="fault-group-title">MEASUREMENT GUIDE — BOARD POWERED</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px;">
-      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
-        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">12V RAIL (post-fuse)</div>
-        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--orange);">11.8–12.2V</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Measure at F1 output or SATA/Barrel input side</div>
+    <div class="meas-grid">
+      <div class="meas-card mc-orange">
+        <div class="meas-label">12V RAIL (post-fuse)</div>
+        <div class="meas-val">11.8–12.2V</div>
+        <div class="meas-note">Measure at F1 output or SATA/Barrel input side</div>
       </div>
-      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
-        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">5V RAIL (Vout 78L05)</div>
-        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--blue);">4.9–5.1V</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Measure at NE555 Pin 8 vs GND</div>
+      <div class="meas-card mc-blue">
+        <div class="meas-label">5V RAIL (Vout 78L05)</div>
+        <div class="meas-val">4.9–5.1V</div>
+        <div class="meas-note">Measure at NE555 Pin 8 vs GND</div>
       </div>
-      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
-        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">NE555 PIN 3 (healthy)</div>
-        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--trace);">0.5–4.5V</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Should oscillate — average ~2.5V. Stuck = fault.</div>
+      <div class="meas-card mc-green">
+        <div class="meas-label">NE555 PIN 3 (healthy)</div>
+        <div class="meas-val">0.5–4.5V</div>
+        <div class="meas-note">Should oscillate — average ~2.5V. Stuck = fault.</div>
       </div>
-      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
-        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">NE555 PINS 2/6 (healthy)</div>
-        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--trace);">1.7–3.3V</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Oscillates between ⅓ and ⅔ of Vcc. Stuck = fault.</div>
+      <div class="meas-card mc-green">
+        <div class="meas-label">NE555 PINS 2/6 (healthy)</div>
+        <div class="meas-val">1.7–3.3V</div>
+        <div class="meas-note">Oscillates between ⅓ and ⅔ of Vcc. Stuck = fault.</div>
       </div>
-      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
-        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">NE555 PIN 5 (CV)</div>
-        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--trace);">~3.3V</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Should be ⅔ × Vcc = 3.31V. Stable.</div>
+      <div class="meas-card mc-green">
+        <div class="meas-label">NE555 PIN 5 (CV)</div>
+        <div class="meas-val">~3.3V</div>
+        <div class="meas-note">Should be ⅔ × Vcc = 3.31V. Stable.</div>
       </div>
-      <div style="padding:12px 14px;border:1px solid var(--border);border-radius:4px;">
-        <div style="font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:4px;">D1/D2 DIODE TEST (off)</div>
-        <div style="font-family:'Orbitron',monospace;font-size:16px;color:var(--yellow);">0.5–0.7V / OL</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">Forward ~0.6V. Reverse must be OL. Any reading = leaky.</div>
+      <div class="meas-card mc-yellow">
+        <div class="meas-label">D1/D2 DIODE TEST (off)</div>
+        <div class="meas-val">0.5–0.7V / OL</div>
+        <div class="meas-note">Forward ~0.6V. Reverse must be OL. Any reading = leaky.</div>
       </div>
     </div>
 
@@ -603,11 +603,11 @@
 <footer>
   <div class="container">
     <p>UENORTH FAN-K11 · CIRCUIT DOCUMENTATION · REVERSE ENGINEERED 2026</p>
-    <p style="margin-top:8px;font-size:9px;">
+    <p class="footer-sub">
       <a href="https://github.com/Jo0/fan-k11">VIEW ON GITHUB</a> &nbsp;·&nbsp;
       Built with ♥ and a multimeter
     </p>
-    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#0d8c44', 'P5P21VW0S3');kofiwidget2.draw();</script> 
+    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#0d8c44', 'P5P21VW0S3');kofiwidget2.draw();</script>
   </div>
 </footer>
 
@@ -616,14 +616,12 @@
      data.js   : COMP_DEFS, POSITIONS, WIRES, FAULTS  (pure data, no DOM)
      draw.js   : drawing primitives + drawSim()        (needs sctx from sim.js)
      sim.js    : canvas refs, state, animation loop    (needs FAULTS + drawSim)
-     thumb.js  : hero PCB thumbnail                    (needs canvas in DOM)
      nav.js    : scroll-spy                            (needs sections in DOM)
   ── -->
 <script src="js/data.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/sim.js"></script>
 <script src="js/mini.js"></script>
-<script src="js/thumb.js"></script>
 <script src="js/nav.js"></script>
 </body>
 </html>

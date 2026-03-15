@@ -6,12 +6,148 @@
 // ── Coordinate helpers ────────────────────────────────────────────────────────
 // Virtual world is 840×560 (3:2 ratio).
 // simScale, simOX, simOY are written by resizeSim() in sim.js.
-// Using a uniform scale ensures the schematic never distorts regardless of
-// canvas size — if the canvas isn't exactly 3:2, we letterbox on that axis.
+function SX(v) { return vpPanX + (simOX + v * simScale) * vpZoom; }
+function SY(v) { return vpPanY + (simOY + v * simScale) * vpZoom; }
+function SS(v) { return v * simScale * vpZoom; }
 
-function SX(v) { return vpPanX + (simOX + v * simScale) * vpZoom; }   // world x → canvas x
-function SY(v) { return vpPanY + (simOY + v * simScale) * vpZoom; }   // world y → canvas y
-function SS(v) { return v * simScale * vpZoom; }                       // world dimension → canvas size
+// ── Layout state (populated from layout.json via applySimLayout) ───────────────
+let simPos    = {};  // { compId: {x, y, rot, terminals:[{id,x,y,net}]} }
+let simWires  = [];  // [{ points:[[x,y],...], color:'#rrggbb' }]
+let simBounds = { minX: 30, minY: 30, maxX: 810, maxY: 530 };  // board outline
+
+// Half-dimensions used to compute rect-type component centres from top-left x,y
+const _RECT_HALF = {
+  NE555: { hw: 30, hh: 40 },
+  REG:   { hw: 25, hh: 17 },
+  POT:   { hw: 18, hh: 18 },
+  F1:    { hw: 13, hh:  7 },
+  SATA:  { hw: 38, hh: 13 },
+};
+
+// Drawn body half-extents for each component (used to size the board outline)
+// [hw, hh] in world units from component centre, accounting for labels/leads
+const _BODY_HALF = {
+  NE555:  [30, 40], REG:    [25, 17], POT:    [32, 32],
+  F1:     [13,  7], SATA:   [38, 13], BARREL: [18, 18],
+  LED1:   [12, 20], // label above
+  R1:     [10, 10], R2:     [10, 10], R3:     [10, 10],
+  C1:     [10, 10], C2:     [10, 10], C3:     [10, 10], C4:     [10, 10],
+  D1:     [12,  8], D2:     [12,  8],
+  FAN1:   [13, 24], FAN2:   [13, 24], FAN3:   [13, 24],
+  FAN4:   [13, 24], FAN5:   [13, 24], FAN6:   [13, 24],
+};
+
+// Canonical terminal → net mapping (circuit topology, not layout-dependent)
+const _TERM_NETS = {
+  NE555:  { P1:'GND', P2:'TIM', P3:'PWM', P4:'5V', P8:'5V', P7:'P7', P6:'TIM', P5:'CV' },
+  REG:    { Vout:'5V', Vin:'12V' },
+  R1:     { L:'5V',  R:'P7'  },
+  R2:     { L:'P7',  R:'DK'  },
+  R3:     { L:'5V',  R:'RLED'},
+  C1:     { L:'12V', R:'GND' },
+  C2:     { L:'5V',  R:'GND' },
+  C3:     { L:'TIM', R:'GND' },
+  C4:     { L:'CV',  R:'GND' },
+  D1:     { A:'P7',  K:'TIM' },
+  D2:     { A:'DA',  K:'DK'  },
+  POT:    { LW:'TIM',R:'DA'  },
+  LED1:   { A:'RLED',K:'GND' },
+  F1:     { IN:'12V',OUT:'12V'},
+  SATA:   { '12V':'12V', GND:'GND' },
+  BARREL: { '12V':'12V', GND:'GND' },
+  FAN1:   { '12V':'12V', PWM:'PWM', GND:'GND' },
+  FAN2:   { '12V':'12V', PWM:'PWM', GND:'GND' },
+  FAN3:   { '12V':'12V', PWM:'PWM', GND:'GND' },
+  FAN4:   { '12V':'12V', PWM:'PWM', GND:'GND' },
+  FAN5:   { '12V':'12V', PWM:'PWM', GND:'GND' },
+  FAN6:   { '12V':'12V', PWM:'PWM', GND:'GND' },
+};
+
+/**
+ * Parse layout.json data into simPos and simWires.
+ * Called once from sim.js after fetch('./layout.json').
+ */
+function applySimLayout(data) {
+  simWires = data.wires || [];
+  simPos   = {};
+  for (const c of (data.components || [])) {
+    let cx, cy;
+    const hd = _RECT_HALF[c.id];
+    if (c.cx !== undefined)           { cx = c.cx;        cy = c.cy; }
+    else if (hd && c.x !== undefined) { cx = c.x + hd.hw; cy = c.y + hd.hh; }
+    else if (c.terminals?.length) {
+      const xs = c.terminals.map(t => t.x), ys = c.terminals.map(t => t.y);
+      cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+      cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    }
+    if (cx === undefined) continue;
+    const netMap = _TERM_NETS[c.id] || {};
+    simPos[c.id] = {
+      x: cx, y: cy, rot: c.rot || 0,
+      terminals: (c.terminals || []).map(t => ({ ...t, net: netMap[t.id] || 'misc' })),
+    };
+  }
+
+  // Compute board outline from component body extents and wire points
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const ex = (x, y) => {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  };
+  for (const [id, pos] of Object.entries(simPos)) {
+    const bh = _BODY_HALF[id];
+    if (bh) { ex(pos.x - bh[0], pos.y - bh[1]); ex(pos.x + bh[0], pos.y + bh[1]); }
+    else pos.terminals.forEach(t => ex(t.x, t.y));
+  }
+  for (const w of simWires)
+    w.points.forEach(p => ex(p[0], p[1]));
+  if (isFinite(minX)) {
+    const pad = 40;
+    simBounds = { minX: minX - pad, minY: minY - pad, maxX: maxX + pad, maxY: maxY + pad };
+  }
+}
+
+// ── Rotation wrapper ───────────────────────────────────────────────────────────
+/** Apply a canvas rotation around world-point (cx,cy), run fn(), then restore. */
+function withRot(cx, cy, rot, fn) {
+  if (!rot) { fn(); return; }
+  sctx.save();
+  const px = SX(cx), py = SY(cy);
+  sctx.translate(px, py);
+  sctx.rotate(rot * Math.PI / 180);
+  sctx.translate(-px, -py);
+  fn();
+  sctx.restore();
+}
+
+// ── Power / GND schematic symbols ─────────────────────────────────────────────
+/** Draw a KiCad-style +12V / +5V flag or GND 3-bar symbol at terminal (tx,ty). */
+function sPowerSym(tx, ty, net, c) {
+  sctx.save();
+  sctx.strokeStyle = c; sctx.fillStyle = c;
+  sctx.lineWidth   = Math.max(1, SS(1.2));
+  sctx.shadowColor = c; sctx.shadowBlur = c === '#252525' ? 0 : 4;
+  if (net === 'GND') {
+    sctx.beginPath();
+    sctx.moveTo(SX(tx), SY(ty)); sctx.lineTo(SX(tx), SY(ty + 5));
+    sctx.stroke();
+    [[6, 0], [4, 2.5], [2.5, 5]].forEach(([hw, dy]) => {
+      sctx.beginPath();
+      sctx.moveTo(SX(tx - hw), SY(ty + 5 + dy));
+      sctx.lineTo(SX(tx + hw), SY(ty + 5 + dy));
+      sctx.stroke();
+    });
+  } else {
+    sctx.beginPath();
+    sctx.moveTo(SX(tx), SY(ty)); sctx.lineTo(SX(tx), SY(ty - 7));
+    sctx.stroke();
+    sctx.shadowBlur = 0;
+    sctx.font = `bold ${Math.max(5, SS(6.5))}px Share Tech Mono`;
+    sctx.textAlign = 'center'; sctx.textBaseline = 'bottom';
+    sctx.fillText(net === '12V' ? '+12V' : '+5V', SX(tx), SY(ty - 7));
+  }
+  sctx.restore();
+}
 
 // ── Primitive helpers ─────────────────────────────────────────────────────────
 
@@ -48,6 +184,32 @@ function slbl(x, y, t, c, s = 8, a = 'center') {
   sctx.textAlign = a;
   sctx.textBaseline = 'middle';
   sctx.fillText(t, SX(x), SY(y));
+  sctx.restore();
+}
+
+/** Draw a highlighted pill label on hover */
+function sHoverLbl(x, y, text, align = 'center') {
+  sctx.save();
+  const fs = Math.max(8, SS(8.5));
+  sctx.font = `bold ${fs}px Share Tech Mono, monospace`;
+  const tw  = sctx.measureText(text).width;
+  const pad = Math.max(3, SS(4));
+  const bh  = fs + pad * 2;
+  const px  = SX(x), py = SY(y);
+  const rx  = align === 'left'  ? px :
+              align === 'right' ? px - tw - pad * 2 :
+                                  px - tw / 2 - pad;
+  sctx.fillStyle   = 'rgba(0,8,0,0.92)';
+  sctx.strokeStyle = '#00ff41';
+  sctx.lineWidth   = Math.max(1, SS(0.9));
+  sctx.shadowColor = '#00ff41'; sctx.shadowBlur = 10;
+  sctx.beginPath();
+  sctx.roundRect(rx, py - bh / 2, tw + pad * 2, bh, bh / 3);
+  sctx.fill(); sctx.stroke();
+  sctx.shadowBlur  = 0;
+  sctx.fillStyle   = '#ffffff';
+  sctx.textAlign   = 'left'; sctx.textBaseline = 'middle';
+  sctx.fillText(text, rx + pad, py);
   sctx.restore();
 }
 
@@ -182,7 +344,7 @@ function sfan(x, y, n, spd) {
   sctx.roundRect(SX(x - 13), SY(y - 18), SS(26), SS(36), SS(2));
   sctx.fill();
   sctx.stroke();
-  // Spinning blades — simTick comes from sim.js
+  // Spinning blades
   const ang = (simTick * 0.045 * (spd * 0.6) * 9) % (Math.PI * 2);
   sctx.save();
   sctx.translate(SX(x), SY(y - 4));
@@ -204,206 +366,250 @@ function sfan(x, y, n, spd) {
     sctx.fill();
   }
   sctx.restore();
-  slbl(x, y + 24, `F${n}`, fc, 6.5);
+  slbl(x, y - 24, `F${n}`, fc, 6.5);
 }
 
-// ── Main scene draw — faithful port of original ───────────────────────────────
-function drawSim(){
-  sctx.clearRect(0,0,simW,simH);
-  const f=FAULTS[faultKey];
-  const faults=f.faults;
-  const dead=f.vin===0;
-  const v5d=f.v5===0;
-  const iF=id=>faults.includes(id);
-  const fuseOk=!iF('FUSE')&&!iF('C1');
-  const p12=(c='#ff6b00')=>dead?'#252525':c;
-  const pF=(c='#ff6b00')=>fuseOk?p12(c):'#252525';
-  const p5=(c='#44aaff')=>v5d?'#252525':c;
-  const pg=(c='#00ff41')=>dead?'#252525':c;
-  const p3live=f.p3!=='zero'&&f.p3!=='low'&&!v5d;
-  const p3c=p3live?'#00ff41':'#252525';
-  const spd=getFaultSpd();
+// ── Main scene draw ────────────────────────────────────────────────────────────
+function drawSim() {
+  sctx.clearRect(0, 0, simW, simH);
 
-  // Board BG
-  sctx.save();sctx.fillStyle='rgba(0,12,0,0.5)';sctx.strokeStyle='#1a3a1a';sctx.lineWidth=2;
-  sctx.shadowColor='#00ff41';sctx.shadowBlur=12;
-  sctx.beginPath();sctx.roundRect(SX(30),SY(30),SS(780),SS(500),SS(6));sctx.fill();sctx.stroke();
-  sctx.shadowBlur=0;sctx.restore();
+  const f      = FAULTS[faultKey];
+  const faults = f.faults;
+  const dead   = f.vin === 0, v5d = f.v5 === 0;
+  const iF     = id => faults.includes(id);
+  const fuseOk = !iF('FUSE') && !iF('C1');
 
-  // ── WIRES START ── (editor.html regenerates everything between these markers)
-  // GND rail
-  sw(35,530,720,530,'#1a4a1a',false);
-  sctx.save();sctx.strokeStyle='#1a4a1a';sctx.lineWidth=1;sctx.setLineDash([4,4]);
-  sctx.beginPath();sctx.moveTo(SX(35),SY(530));sctx.lineTo(SX(720),SY(530));sctx.stroke();
-  sctx.setLineDash([]);sctx.restore();
-  slbl(420,538,'── COMMON GND ──','#1a4a1a',7);
+  // Fault-aware base colours
+  const p12c = dead   ? '#252525' : '#ff6b00';
+  const pFc  = fuseOk ? p12c     : '#252525';
+  const p5c  = v5d    ? '#252525' : '#44aaff';
+  const pgc  = dead   ? '#252525' : '#1a5a1a';
 
-  // 12V rail
-  const V12Y=65;
-  sw(200,390,200,V12Y,pF());sw(200,V12Y,680,V12Y,pF());
-  slbl(550,57,'12V RAIL → FAN PIN 1',pF(),7);
+  const p3live = f.p3 !== 'zero' && f.p3 !== 'low' && !v5d;
+  const p3c    = p3live ? '#00ff41' : '#252525';
+  const spd    = getFaultSpd();
+  const R1c    = iF('R1') ? '#252525' : p5c;
+  const timC   = (v5d || iF('IC555') || iF('CT')) ? '#252525' : '#ffee44';
 
-  // 5V rail
-  const V5Y=160;
-  sw(680,300,680,V5Y,p5());sw(200,V5Y,720,V5Y,p5());
-  sdot(680,V5Y,p5());slbl(550,152,'5V RAIL',p5(),7);
+  // Map an editor net-colour to its current fault-aware colour
+  function netC(ec) {
+    switch (ec) {
+      case '#00ffcc': return p3c;                                          // PWM
+      case '#88ccff': return R1c;                                          // P7
+      case '#ffee44': return timC;                                         // TIM
+      case '#dd44ff': return p5c;                                          // CV
+      case '#ffdd44': return timC;                                         // DA / DK
+      case '#00ff41': return (iF('R3') || v5d) ? '#252525' : '#00ff41';   // RLED
+      default:        return ec;
+    }
+  }
 
-  // SATA → FUSE
-  sw(120,100,200,100,p12());sw(200,100,200,390,p12());sdot(200,100,p12());
-  // BARREL → FUSE
-  sw(80,390,200,390,p12());sdot(200,390,p12());
-  // GND returns
-  sw(80,115,80,530,pg());sdot(80,530,'#1a4a1a');
-  sw(60,420,60,530,pg());sdot(60,530,'#1a4a1a');
-
-  // FUSE → REG Vin
-  sw(220,390,680,390,pF());sw(680,390,680,316,pF());sdot(680,390,pF());
-  // C1 from 12V rail
-  sw(660,225,660,V12Y,pF());sdot(660,V12Y,pF());
-  sw(660,237,660,530,'#1a4a1a');sdot(660,530,'#1a4a1a');
-
-  // REG → 5V
-  sw(680,284,680,V5Y,p5());
-  // C2 on 5V
-  sw(660,180,660,V5Y,p5());sdot(660,V5Y,p5());
-  sw(660,192,660,530,'#1a4a1a');sdot(660,530,'#1a4a1a');
-  // R3 → 5V
-  sw(610,180,610,V5Y,p5());sdot(610,V5Y,p5());
-  // R3 → LED → GND
-  sw(610,174,610,145,pg());
-  sw(610,138,610,155,pg());sw(610,155,640,155,pg());sw(640,155,640,530,pg());sdot(640,530,'#1a4a1a');
-
-  // 5V rail → Pin8 Vcc: tap rail at x=430, approach Pin8 from right
-  sw(430,160,430,388,p5());sw(430,388,410,388,p5());sdot(430,160,p5());
-  slbl(425,375,'5V→P8',p5(),6.5);
-  // 5V → P4 RST: bypass x=350 via x=330
-  sw(330,160,330,418,p5());sw(330,418,350,418,p5());sdot(330,160,p5());
-  // P1 GND: jog left to x=340 to clear PWM wire at x=350
-  sw(350,388,340,388,pg());sw(340,388,340,530,pg());sdot(340,530,'#1a4a1a');
-
-  // R1 left lead (600,225) → 5V rail; right lead (620,225) → P7 bus
-  sw(600,225,600,160,p5());sdot(600,160,p5());
-  const R1c=iF('R1')?'#252525':p5();
-  sw(620,225,620,350,R1c);
-  // R2 left lead (480,480) → P7 bus; right lead (500,480) met by D2 cathode wire
-  const R2c=iF('R2')?'#252525':R1c;
-  sw(480,480,480,350,R2c);
-  // P7 bus
-  sw(410,350,620,350,R1c);sdot(480,350,R1c);sdot(620,350,R1c);sdot(410,350,R1c);
-  slbl(550,342,'P7 NODE',R1c,6.5);
-  sw(410,350,410,398,R1c);
-
-  // D2 anode (549,430) → POT right leg (518,310)
-  sw(549,430,549,310,iF('D2')?'#252525':'#ffdd44');sw(549,310,518,310,iF('D2')?'#252525':'#ffdd44');
-  // D2 cathode (569,430) → R2 right lead (500,480)
-  sw(569,430,569,480,iF('D2')?'#252525':'#ffdd44');sw(569,480,500,480,iF('D2')?'#252525':'#ffdd44');
-  // D1 anode (479,430) → POT left/wiper (482,310)
-  sw(479,430,479,310,iF('D1')?'#252525':'#ffdd44');sw(479,310,482,310,iF('D1')?'#252525':'#ffdd44');
-  // D1 cathode (499,430) → P2/6 node via Pin6 (410,408)
-  sw(499,430,499,408,iF('D1')?'#252525':'#ffdd44');sw(499,408,410,408,iF('D1')?'#252525':'#ffdd44');sdot(410,408,iF('D1')?'#252525':'#ffdd44');
-
-  // POT wiper → P2/6
-  sw(500,345,350,345,pg());sw(350,345,350,398,pg());sdot(350,345,pg());
-  slbl(440,337,'wiper→P2/6',pg(),6.5);
-  // Pin2 ↔ Pin6 bridge: route inside IC box via x=380 to avoid Pin7 at (410,398)
-  sw(350,398,380,398,pg());sw(380,398,380,408,pg());sw(380,408,410,408,pg());sdot(410,408,pg());
-
-  // C3 → P2/6
-  sw(660,390,660,408,iF('CT')?'#333':'#ff6b00');sw(660,408,410,408,iF('CT')?'#333':'#ff6b00');
-  sw(660,402,660,530,'#1a4a1a');sdot(660,530,'#1a4a1a');
-  slbl(535,371,'C3→P2/6',iF('CT')?'#333':'#ff6b00',6.5);
-
-  // C4 → P5
-  sw(710,390,710,V5Y,p5());sdot(710,V5Y,p5());
-  sw(710,402,710,530,'#1a4a1a');sdot(710,530,'#1a4a1a');
-  sw(710,390,410,390,p5());sw(410,390,410,418,p5());
-  slbl(560,381,'C4→P5',p5(),6.5);
-
-  // P3 → fans
-  sw(350,408,350,V12Y+15,p3c);sw(350,V12Y+15,440,V12Y+15,p3c);
-  slbl(580,V12Y+23,'P3→PWM→Fan Pin4',p3c,6.5);
-
-  // ── WIRES END ──
-
-  // Per-fan drops
-  [180,230,280,330,380,430].forEach((fx,i)=>{
-    sw(fx,V12Y,fx,92,pF()+'aa',false);
-    sw(fx,V12Y+15,fx,92,p3c+'aa',false);
-    sw(fx,128,fx,530,'#1a4a1a',false);
-    sfan(fx,110,i+1,spd);
-  });
-
-  // SATA connector
-  sctx.save();sctx.strokeStyle=dead?'#333':'#ff6b00';sctx.lineWidth=1.5;sctx.fillStyle='#020802';
-  sctx.shadowColor=dead?'#333':'#ff6b00';sctx.shadowBlur=dead?2:8;
-  sctx.beginPath();sctx.roundRect(SX(40),SY(85),SS(76),SS(26),SS(2));sctx.fill();sctx.stroke();
-  slbl(78,98,'SATA POWER',dead?'#333':'#ff6b00',7);sctx.restore();
-
-  // Barrel jack
-  sctx.save();sctx.strokeStyle=dead?'#333':'#ff6b00';sctx.lineWidth=2;sctx.fillStyle='#020802';
-  sctx.shadowColor=dead?'#333':'#ff6b00';sctx.shadowBlur=dead?2:10;
-  sctx.beginPath();sctx.arc(SX(80),SY(420),SS(18),0,Math.PI*2);sctx.fill();sctx.stroke();
-  sctx.beginPath();sctx.arc(SX(80),SY(420),SS(7),0,Math.PI*2);sctx.stroke();
-  sctx.fillStyle=dead?'#333':'#ff6b00';sctx.beginPath();sctx.arc(SX(80),SY(420),SS(3.5),0,Math.PI*2);sctx.fill();
-  slbl(80,443,'12V BARREL',dead?'#333':'#ff6b00',6.5);sctx.restore();
-
-  sbox(200,390,26,14,'F1','5A','#ff6b00',iF('FUSE')||iF('C1'));
-  sbox(680,300,50,34,'78L05','5V REG','#44aaff',iF('REG'));
-
-  // Pot
+  // ── Board background (sized from layout bounds) ─────────────────────────────
   sctx.save();
-  sctx.strokeStyle='#2a5a2a';sctx.lineWidth=1;sctx.fillStyle='#020802';
-  sctx.beginPath();sctx.arc(SX(500),SY(310),SS(32),0,Math.PI*2);sctx.fill();sctx.stroke();
-  sctx.strokeStyle='#00ff41';sctx.shadowColor='#00ff41';sctx.shadowBlur=6;
-  sctx.beginPath();sctx.roundRect(SX(482),SY(292),SS(36),SS(36),SS(3));sctx.fill();sctx.stroke();
-  const pang=(135+potV*270)*Math.PI/180;
-  sctx.lineWidth=2;sctx.beginPath();sctx.moveTo(SX(500),SY(310));
-  sctx.lineTo(SX(500)+Math.cos(pang)*SS(14),SY(310)+Math.sin(pang)*SS(14));sctx.stroke();
-  sctx.fillStyle='#00ff41';sctx.beginPath();sctx.arc(SX(500),SY(310),SS(2.5),0,Math.PI*2);sctx.fill();
-  slbl(500,347,'RV1 90kΩ','#2a5a2a',6.5);sctx.restore();
+  sctx.fillStyle = 'rgba(0,12,0,0.5)'; sctx.strokeStyle = '#1a3a1a'; sctx.lineWidth = 2;
+  sctx.shadowColor = '#00ff41'; sctx.shadowBlur = 12;
+  sctx.beginPath();
+  sctx.roundRect(SX(simBounds.minX), SY(simBounds.minY),
+    SS(simBounds.maxX - simBounds.minX), SS(simBounds.maxY - simBounds.minY), SS(6));
+  sctx.fill(); sctx.stroke();
+  sctx.shadowBlur = 0; sctx.restore();
 
-  // LED
-  const ledOn=f.ledOn;
-  sctx.save();sctx.strokeStyle=ledOn?'#00ff41':'#1a3a1a';sctx.fillStyle=ledOn?'rgba(0,255,65,0.12)':'#020802';
-  sctx.shadowColor=ledOn?'#00ff41':'#1a3a1a';sctx.shadowBlur=ledOn?12:2;
-  sctx.beginPath();sctx.arc(SX(610),SY(130),SS(8),0,Math.PI*2);sctx.fill();sctx.stroke();
-  if(ledOn){sctx.fillStyle='#00ff41';sctx.beginPath();sctx.arc(SX(610),SY(130),SS(3),0,Math.PI*2);sctx.fill();}
-  slbl(610,113,'LED1',ledOn?'#00ff41':'#1a3a1a',6.5);sctx.restore();
+  // ── Signal wires from layout.json ───────────────────────────────────────────
+  for (const w of simWires) {
+    const c = netC(w.color);
+    for (let i = 0; i < w.points.length - 1; i++)
+      sw(w.points[i][0], w.points[i][1], w.points[i + 1][0], w.points[i + 1][1], c);
+  }
 
-  // SMD passives
-  ssmd(610,180,'R3','#00ff41',iF('R3'));slbl(610,194,'R3 4.7k','#2a5a2a',6.5);
-  ssmd(610,225,'R1','#44aaff',iF('R1'));slbl(610,238,'R1 1kΩ','#2a5a2a',6.5);
-  ssmd(660,180,'C2','#44aaff',iF('C2')&&f.v5===0,iF('C2')&&f.v5>0);slbl(660,194,'C2 .33µF','#2a5a2a',6.5);
-  ssmd(660,225,'C1','#44aaff',iF('C1'));slbl(660,238,'C1 .22µF','#2a5a2a',6.5);
-  ssmd(490,480,'R2','#ffdd44',iF('R2'));slbl(490,493,'R2 1kΩ','#2a5a2a',6.5);
-  ssmd(660,390,'C3','#ff6b00',iF('CT'));slbl(660,403,'C3 33nF','#2a5a2a',6.5);
-  ssmd(710,390,'C4','#00ff41');slbl(710,403,'C4 10nF','#2a5a2a',6.5);
+  // Junction dots where 3+ wire point-coordinates coincide
+  const ptCount = new Map();
+  for (const w of simWires) {
+    const c = netC(w.color);
+    for (const p of w.points) {
+      const k = `${p[0]},${p[1]}`;
+      if (!ptCount.has(k)) ptCount.set(k, { n: 0, c });
+      ptCount.get(k).n++;
+    }
+  }
+  for (const [k, v] of ptCount) {
+    if (v.n >= 3) {
+      const [x, y] = k.split(',').map(Number);
+      sdot(x, y, v.c);
+    }
+  }
 
-  // Diodes
-  sdio(490,430,'#ffdd44',iF('D1'));slbl(490,445,'D1','#ffdd44',6.5);
-  sdio(560,430,'#ffdd44',iF('D2'));slbl(560,445,'D2','#ffdd44',6.5);
+  // ── Power / GND symbols at every power-net terminal ─────────────────────────
+  const pwrAlive = { '12V': pFc, '5V': p5c, 'GND': pgc };
+  for (const pos of Object.values(simPos)) {
+    for (const t of pos.terminals) {
+      if (pwrAlive[t.net] !== undefined)
+        sPowerSym(t.x, t.y, t.net, pwrAlive[t.net]);
+    }
+  }
 
-  // NE555 IC
-  const ic555fault=iF('IC555');
-  const icc=ic555fault?'#ff4444':'#00ff41';
-  sctx.save();sctx.strokeStyle=icc;sctx.lineWidth=Math.max(1,SS(1.5));sctx.fillStyle='#020802';
-  sctx.shadowColor=icc;sctx.shadowBlur=ic555fault?14:8;
-  sctx.beginPath();sctx.roundRect(SX(350),SY(380),SS(60),SS(80),SS(3));sctx.fill();sctx.stroke();
-  sctx.fillStyle='#020802';sctx.strokeStyle='#1a4a1a';sctx.lineWidth=1;
-  sctx.beginPath();sctx.arc(SX(380),SY(380),SS(5),0,Math.PI);sctx.fill();sctx.stroke();
-  slbl(380,370,'NE555',icc,8);slbl(380,361,'U1','#2a5a2a',6.5);
-  if(ic555fault)slbl(380,420,'✗FAULT','#ff4444',7);
-  else{[['1',357,388],['2',357,398],['3',357,408],['4',357,418],
-    ['8',403,388],['7',403,398],['6',403,408],['5',403,418]
-  ].forEach(([t,px,py])=>{
-    sctx.save();sctx.fillStyle='#2a5a2a';sctx.font=`${Math.max(5,SS(6))}px Share Tech Mono`;
-    sctx.textAlign='center';sctx.textBaseline='middle';sctx.fillText(t,SX(px),SY(py));sctx.restore();
-  });}
+  // ── Fans ────────────────────────────────────────────────────────────────────
+  for (let i = 0; i < 6; i++) {
+    const fn = simPos[`FAN${i + 1}`];
+    if (fn) sfan(fn.x, fn.y, i + 1, spd);
+  }
+
+  // ── SATA connector ──────────────────────────────────────────────────────────
+  const sat = simPos.SATA || { x: 78, y: 98, rot: 0 };
+  withRot(sat.x, sat.y, sat.rot, () => {
+    sctx.save();
+    sctx.strokeStyle = dead ? '#333' : '#ff6b00';
+    sctx.lineWidth = 1.5; sctx.fillStyle = '#020802';
+    sctx.shadowColor = dead ? '#333' : '#ff6b00';
+    sctx.shadowBlur = dead ? 2 : 8;
+    sctx.beginPath();
+    sctx.roundRect(SX(sat.x - 38), SY(sat.y - 13), SS(76), SS(26), SS(2));
+    sctx.fill(); sctx.stroke();
+    sctx.restore();
+  });
+  slbl(sat.x, sat.y, 'SATA POWER', dead ? '#333' : '#ff6b00', 7);
+
+  // ── Barrel jack ─────────────────────────────────────────────────────────────
+  const bar = simPos.BARREL || { x: 80, y: 420 };
+  sctx.save();
+  sctx.strokeStyle = dead ? '#333' : '#ff6b00'; sctx.lineWidth = 2;
+  sctx.fillStyle = '#020802';
+  sctx.shadowColor = dead ? '#333' : '#ff6b00'; sctx.shadowBlur = dead ? 2 : 10;
+  sctx.beginPath(); sctx.arc(SX(bar.x), SY(bar.y), SS(18), 0, Math.PI * 2);
+  sctx.fill(); sctx.stroke();
+  sctx.beginPath(); sctx.arc(SX(bar.x), SY(bar.y), SS(7),  0, Math.PI * 2); sctx.stroke();
+  sctx.fillStyle = dead ? '#333' : '#ff6b00';
+  sctx.beginPath(); sctx.arc(SX(bar.x), SY(bar.y), SS(3.5),0, Math.PI * 2); sctx.fill();
+  slbl(bar.x, bar.y + 23, '12V BARREL', dead ? '#333' : '#ff6b00', 6.5);
   sctx.restore();
 
-  // Board label
-  sctx.save();sctx.strokeStyle='#1a4a1a';sctx.lineWidth=1;sctx.strokeRect(SX(720),SY(45),SS(75),SS(40));
-  slbl(757,55,'UENORTH','#2a5a2a',7);slbl(757,65,'FAN-K11','#2a5a2a',8);sctx.restore();
+  // ── Fuse ────────────────────────────────────────────────────────────────────
+  const fu = simPos.F1 || { x: 200, y: 390, rot: 0 };
+  withRot(fu.x, fu.y, fu.rot, () =>
+    sbox(fu.x, fu.y, 26, 14, 'F1', '5A', '#ff6b00', iF('FUSE') || iF('C1')));
+  if (hoverSimComp === 'F1') sHoverLbl(fu.x, fu.y + 14, 'F1 — 5A fuse');
+
+  // ── Voltage regulator ───────────────────────────────────────────────────────
+  const reg = simPos.REG || { x: 680, y: 300, rot: 0 };
+  withRot(reg.x, reg.y, reg.rot, () =>
+    sbox(reg.x, reg.y, 50, 34, '78L05', '5V REG', '#44aaff', iF('REG')));
+
+  // ── Potentiometer ───────────────────────────────────────────────────────────
+  const pot = simPos.POT || { x: 500, y: 310 };
+  sctx.save();
+  sctx.strokeStyle = '#2a5a2a'; sctx.lineWidth = 1; sctx.fillStyle = '#020802';
+  sctx.beginPath(); sctx.arc(SX(pot.x), SY(pot.y), SS(32), 0, Math.PI * 2);
+  sctx.fill(); sctx.stroke();
+  sctx.strokeStyle = '#00ff41'; sctx.shadowColor = '#00ff41'; sctx.shadowBlur = 6;
+  sctx.beginPath();
+  sctx.roundRect(SX(pot.x - 18), SY(pot.y - 18), SS(36), SS(36), SS(3));
+  sctx.fill(); sctx.stroke();
+  const pang = (135 + potV * 270) * Math.PI / 180;
+  sctx.lineWidth = 2; sctx.beginPath();
+  sctx.moveTo(SX(pot.x), SY(pot.y));
+  sctx.lineTo(SX(pot.x) + Math.cos(pang) * SS(14), SY(pot.y) + Math.sin(pang) * SS(14));
+  sctx.stroke();
+  sctx.fillStyle = '#00ff41';
+  sctx.beginPath(); sctx.arc(SX(pot.x), SY(pot.y), SS(2.5), 0, Math.PI * 2); sctx.fill();
+  if (hoverSimComp === 'POT') sHoverLbl(pot.x, pot.y + 24, 'RV1 — 90kΩ pot');
+  else slbl(pot.x, pot.y + 24, 'RV1 90kΩ', '#2a5a2a', 6.5);
+  sctx.restore();
+
+  // ── LED ─────────────────────────────────────────────────────────────────────
+  const led   = simPos.LED1 || { x: 610, y: 130 };
+  const ledOn = f.ledOn;
+  sctx.save();
+  sctx.strokeStyle = ledOn ? '#00ff41' : '#1a3a1a';
+  sctx.fillStyle   = ledOn ? 'rgba(0,255,65,0.12)' : '#020802';
+  sctx.shadowColor = ledOn ? '#00ff41' : '#1a3a1a'; sctx.shadowBlur = ledOn ? 12 : 2;
+  sctx.beginPath(); sctx.arc(SX(led.x), SY(led.y), SS(8), 0, Math.PI * 2);
+  sctx.fill(); sctx.stroke();
+  if (ledOn) {
+    sctx.fillStyle = '#00ff41';
+    sctx.beginPath(); sctx.arc(SX(led.x), SY(led.y), SS(3), 0, Math.PI * 2); sctx.fill();
+  }
+  slbl(led.x, led.y - 17, 'LED1', ledOn ? '#00ff41' : '#1a3a1a', 6.5);
+  sctx.restore();
+
+  // ── SMD passives ─────────────────────────────────────────────────────────────
+  function drawSMD(id, lbl, color, fault, warn) {
+    const p = simPos[id]; if (!p) return;
+    withRot(p.x, p.y, p.rot, () => ssmd(p.x, p.y, id, color, fault, warn));
+    const hov = hoverSimComp === id;
+    if (p.rot % 180 === 90) {
+      if (hov) sHoverLbl(p.x + 16, p.y, lbl, 'left');
+      else slbl(p.x + 16, p.y, lbl, '#2a5a2a', 6.5, 'left');
+    } else {
+      if (hov) sHoverLbl(p.x, p.y + 14, lbl);
+      else slbl(p.x, p.y + 14, lbl, '#2a5a2a', 6.5);
+    }
+  }
+  drawSMD('R3', 'R3 4.7k',  '#00ff41', iF('R3'));
+  drawSMD('R1', 'R1 1kΩ',   '#44aaff', iF('R1'));
+  drawSMD('C2', 'C2 .33µF', '#44aaff', iF('C2') && v5d, iF('C2') && !v5d);
+  drawSMD('C1', 'C1 .22µF', '#44aaff', iF('C1'));
+  drawSMD('R2', 'R2 1kΩ',   '#ffdd44', iF('R2'));
+  drawSMD('C3', 'C3 33nF',  '#ff6b00', iF('CT'));
+  drawSMD('C4', 'C4 10nF',  '#00ff41');
+
+  // ── Diodes ──────────────────────────────────────────────────────────────────
+  function drawDiode(id) {
+    const p = simPos[id]; if (!p) return;
+    withRot(p.x, p.y, p.rot, () => sdio(p.x, p.y, '#ffdd44', iF(id)));
+    if (id === 'D1')
+      slbl(p.x - 16, p.y, id, '#ffdd44', 6.5, 'right');
+    else
+      slbl(p.x, p.y + 14, id, '#ffdd44', 6.5);
+  }
+  drawDiode('D1');
+  drawDiode('D2');
+
+  // ── NE555 IC ─────────────────────────────────────────────────────────────────
+  const ic        = simPos.NE555 || { x: 380, y: 420, rot: 0, terminals: [] };
+  const ic555fault = iF('IC555');
+  const icc        = ic555fault ? '#ff4444' : '#00ff41';
+
+  // Box body (inside rotation transform)
+  withRot(ic.x, ic.y, ic.rot, () => {
+    sctx.save();
+    sctx.strokeStyle = icc; sctx.lineWidth = Math.max(1, SS(1.5));
+    sctx.fillStyle = '#020802';
+    sctx.shadowColor = icc; sctx.shadowBlur = ic555fault ? 14 : 8;
+    sctx.beginPath();
+    sctx.roundRect(SX(ic.x - 30), SY(ic.y - 40), SS(60), SS(80), SS(3));
+    sctx.fill(); sctx.stroke();
+    // Orientation notch
+    sctx.fillStyle = '#020802'; sctx.strokeStyle = '#1a4a1a'; sctx.lineWidth = 1;
+    sctx.beginPath(); sctx.arc(SX(ic.x), SY(ic.y - 40), SS(5), 0, Math.PI);
+    sctx.fill(); sctx.stroke();
+    slbl(ic.x, ic.y - 10, 'NE555', icc, 8);
+    slbl(ic.x, ic.y - 19, 'U1', '#2a5a2a', 6.5);
+    if (ic555fault) slbl(ic.x, ic.y, '✗FAULT', '#ff4444', 7);
+    sctx.restore();
+  });
+
+  // Pin number labels — drawn at already-rotated terminal world positions
+  if (!ic555fault) {
+    const pinNums = { P1:'1', P2:'2', P3:'3', P4:'4', P8:'8', P7:'7', P6:'6', P5:'5' };
+    for (const t of ic.terminals) {
+      const pn = pinNums[t.id]; if (!pn) continue;
+      const inward = t.x < ic.x ? 7 : -7;
+      sctx.save();
+      sctx.fillStyle = '#2a5a2a';
+      sctx.font = `${Math.max(5, SS(6))}px Share Tech Mono`;
+      sctx.textAlign = 'center'; sctx.textBaseline = 'middle';
+      sctx.fillText(pn, SX(t.x + inward), SY(t.y));
+      sctx.restore();
+    }
+  }
+
+  // ── Board label (anchored to bottom-right of board outline) ─────────────────
+  const _blx = simBounds.maxX - 10, _bly = simBounds.maxY - 10;
+  sctx.save();
+  sctx.strokeStyle = '#1a4a1a'; sctx.lineWidth = 1;
+  sctx.strokeRect(SX(_blx - 75), SY(_bly - 40), SS(75), SS(40));
+  slbl(_blx - 75 + 37.5, _bly - 30, 'UENORTH', '#2a5a2a', 7);
+  slbl(_blx - 75 + 37.5, _bly - 18, 'FAN-K11', '#2a5a2a', 8);
+  sctx.restore();
 
   simTick++;
 }
